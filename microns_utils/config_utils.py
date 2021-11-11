@@ -28,6 +28,14 @@ def register_externals(external_stores):
         dj.config['stores'].update(external_stores)
 
 
+def make_store_dict(path):
+    return {
+        'protocol': 'file',
+        'location': str(path),
+        'stage': str(path)
+    }
+
+
 def _get_calling_context() -> locals:
     # get the calling namespace
     import inspect
