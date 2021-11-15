@@ -78,8 +78,8 @@ def get_package_version(repo, package, user='cajal', branch='main', tag=None, so
     :param repo (str): name of repository
     :param package (str): name of package (contains setup.py) 
     :param user (str): owner of repository
-    :param branch (str): branch of repository
-    :param tag (str): specifed tag 
+    :param branch (str): branch of repository (if source='commit')
+    :param tag (str): specifed tag  (if source='tag')
     :param source (str): 
         options: 
             "commit" - gets version of latest commit
