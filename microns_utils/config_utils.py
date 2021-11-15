@@ -80,7 +80,7 @@ def create_vm(schema_name:str, external_stores=None, adapter_objects=None):
     
     return dj.create_virtual_module(schema_name, schema_name, add_objects=adapter_objects, create_tables=False)
 
-def get_package_version(repo, package, user='cajal', branch='main', source='commit'):
+def get_package_version(repo, package, user='cajal', branch='main', tag=None, source='commit'):
     """
     Gets package version.
 
@@ -88,21 +88,23 @@ def get_package_version(repo, package, user='cajal', branch='main', source='comm
     :param package (str): name of package (contains setup.py) 
     :param user (str): owner of repository
     :param branch (str): branch of repository
+    :param tag (str): specifed tag 
     :param source (str): 
         options: 
             "commit" - gets version of latest commit
             "tag" - gets version from latest tag
     :returns: latest version
     """
-    # TODO: switch this to git tags
     if source == 'tag':
-        pass
+        if tag is not None:
+            f = requests.get(f"https://raw.githubusercontent.com/{user}/{repo}/{tag}/python/version.py")
+        else:
+            raise ValueError('Provide arg "tag".')
     elif source == 'commit':
-        f = requests.get(f"https://raw.githubusercontent.com/{user}/{repo}/{branch}/python/version.py")
-        latest = ''.join(re.findall("[\d.]", f.text))
+        f = requests.get(f"https://raw.githubusercontent.com/{user}/{repo}/{branch}/python/version.py")        
     else:
         raise ValueError(f'source: "{source}" not recognized.')
-    
+    latest = ''.join(re.findall("[\d.]", f.text))
     __version__ = [p.version for p in pkg_resources.working_set if p.project_name == package][0]
 
     if __version__ != latest:
