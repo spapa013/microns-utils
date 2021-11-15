@@ -1,8 +1,5 @@
 import traceback
-import requests
-import pkg_resources
-import warnings
-import re
+
 
 try:
     import datajoint as dj
@@ -79,35 +76,3 @@ def create_vm(schema_name:str, external_stores=None, adapter_objects=None):
         register_externals(external_stores)
     
     return dj.create_virtual_module(schema_name, schema_name, add_objects=adapter_objects, create_tables=False)
-
-def get_package_version(repo, package, user='cajal', branch='main', tag=None, source='commit'):
-    """
-    Gets package version.
-
-    :param repo (str): name of repository
-    :param package (str): name of package (contains setup.py) 
-    :param user (str): owner of repository
-    :param branch (str): branch of repository
-    :param tag (str): specifed tag 
-    :param source (str): 
-        options: 
-            "commit" - gets version of latest commit
-            "tag" - gets version from latest tag
-    :returns: latest version
-    """
-    if source == 'tag':
-        if tag is not None:
-            f = requests.get(f"https://raw.githubusercontent.com/{user}/{repo}/{tag}/python/version.py")
-        else:
-            raise ValueError('Provide arg "tag".')
-    elif source == 'commit':
-        f = requests.get(f"https://raw.githubusercontent.com/{user}/{repo}/{branch}/python/version.py")        
-    else:
-        raise ValueError(f'source: "{source}" not recognized.')
-    latest = ''.join(re.findall("[\d.]", f.text))
-    __version__ = [p.version for p in pkg_resources.working_set if p.project_name == package][0]
-
-    if __version__ != latest:
-        warnings.warn(f'You are using {package} version {__version__}, which is not the latest version. Version {latest} is available. Consider upgrading to avoid conflicts with the database.')
-    
-    return __version__
