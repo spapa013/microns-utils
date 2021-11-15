@@ -4,9 +4,12 @@ from os import path
 
 here = path.abspath(path.dirname(__file__))
 
+with open(path.join(here, 'microns_utils', 'version.py')) as f:
+    exec(f.read())
+
 setup(
     name='microns-utils',
-    version='0.0.1',
+    version=__version__,
     description='utilities for MICrONS',
     author='Stelios Papadopoulos, Christos Papadopoulos',
     author_email='spapadop@bcm.edu, cpapadop@bcm.edu',
