@@ -71,7 +71,7 @@ def get_version_from_sys_path(package, path_to_version_file, warn=True):
     return [parse_version(lines)]
 
 
-def get_package_version(repo, package, user='cajal', branch='main', tag=None, source='commit', warn=True):
+def get_package_version(repo, package, user='cajal', branch='main', tag=None, source='commit', url_suffix='python/version.py', warn=True):
     """
     Gets package version.
 
@@ -84,17 +84,18 @@ def get_package_version(repo, package, user='cajal', branch='main', tag=None, so
         options: 
             "commit" - gets version of latest commit
             "tag" - gets version from latest tag
+    :param url_suffix (str): suffix to append to github url where latest version.py file is located
     :param warn (bool): warnings enabled if True
     :returns (str): current package version
     """
     # get latest version
     if source == 'tag':
         if tag is not None:
-            f = requests.get(f"https://raw.githubusercontent.com/{user}/{repo}/{tag}/python/version.py")
+            f = requests.get(f"https://raw.githubusercontent.com/{user}/{repo}/{tag}/{url_suffix}")
         else:
             raise ValueError('Provide arg "tag".')
     elif source == 'commit':
-        f = requests.get(f"https://raw.githubusercontent.com/{user}/{repo}/{branch}/python/version.py")        
+        f = requests.get(f"https://raw.githubusercontent.com/{user}/{repo}/{branch}/{url_suffix}")        
     else:
         raise ValueError(f'source: "{source}" not recognized.')
     latest = parse_version(f.text)
