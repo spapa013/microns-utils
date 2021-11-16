@@ -1,3 +1,4 @@
+import traceback
 import requests
 from importlib import metadata
 import warnings
@@ -31,7 +32,47 @@ def parse_version(text: str):
     return ''.join(re.findall("[\d.]", text))
 
 
-def get_version_from_distributions(package):
+def get_latest_version_from_github(repo, user, branch, source, path_to_version_file, tag=None, warn=True):
+    """
+    Checks github for the latest version of package.
+
+    :param repo (str): name of repository that contains package
+    :param user (str): owner of repository
+    :param branch (str): branch of repository (if source='commit')
+    :param tag (str): specifed tag  (if source='tag')
+    :param source (str): 
+        options: 
+            "commit" - gets version of latest commit
+            "tag" - gets version from latest tag
+    :param path_to_version_file (str): path to version.py file from top of repo
+    :param warn (bool): warnings enabled if True
+    """
+    if source == 'tag':
+        if tag is not None:
+            try:
+                f = requests.get(f"https://raw.githubusercontent.com/{user}/{repo}/{tag}/{path_to_version_file}")
+            except:
+                if warn:
+                    warnings.warn('Failed to reach Github during check for latest version.')
+                    traceback.print_exc()
+        else:
+            raise ValueError('Provide arg "tag".')
+
+    elif source == 'commit':
+        try:
+            f = requests.get(f"https://raw.githubusercontent.com/{user}/{repo}/{branch}/{path_to_version_file}")
+        except:
+            if warn:
+                warnings.warn('Failed to reach Github during check for latest version.')
+                traceback.print_exc()       
+    
+    else:
+        raise ValueError(f'source: "{source}" not recognized.')
+
+    return parse_version(f.text)
+
+
+def get_package_version_from_distributions(package, warn=True):
     """
     Checks importlib metadata for an installed version of the package. 
     Note: packages installed as editable (i.e. pip install -e) will not be found.
@@ -39,10 +80,14 @@ def get_version_from_distributions(package):
     :param package (str): name of package:
     :returns (list): package version
     """
-    return [dist.version for dist in metadata.distributions() if dist.metadata["Name"] == package]
+    version = [dist.version for dist in metadata.distributions() if dist.metadata["Name"] == package]
+    if not version:
+        if warn:
+            warnings.warn('Package not found in distributions.')
+    return version
 
 
-def get_version_from_sys_path(package, path_to_version_file, warn=True):
+def get_package_version_from_sys_path(package, path_to_version_file, warn=True):
     """
     Checks sys.path for package and returns version from internal version.py file.
     
@@ -71,41 +116,22 @@ def get_version_from_sys_path(package, path_to_version_file, warn=True):
     return [parse_version(lines)]
 
 
-def get_package_version(repo, package, user='cajal', branch='main', tag=None, source='commit', url_suffix='python/version.py', warn=True):
+def get_package_version(package, check_if_latest=False, check_if_latest_kwargs={}, warn=True):
     """
     Gets package version.
 
-    :param repo (str): name of repository
-    :param package (str): name of package (contains setup.py) 
-    :param user (str): owner of repository
-    :param branch (str): branch of repository (if source='commit')
-    :param tag (str): specifed tag  (if source='tag')
-    :param source (str): 
-        options: 
-            "commit" - gets version of latest commit
-            "tag" - gets version from latest tag
-    :param url_suffix (str): suffix to append to github url where latest version.py file is located
+    :param package (str): name of package (contains setup.py)
+    :param check_if_latest (bool): if True, checks if installed version matches latest version on Github 
+    :check_if_latest_kwargs (dict): kwargs to pass to "get_latest_version_from_github". 
     :param warn (bool): warnings enabled if True
     :returns (str): current package version
     """
-    # get latest version
-    if source == 'tag':
-        if tag is not None:
-            f = requests.get(f"https://raw.githubusercontent.com/{user}/{repo}/{tag}/{url_suffix}")
-        else:
-            raise ValueError('Provide arg "tag".')
-    elif source == 'commit':
-        f = requests.get(f"https://raw.githubusercontent.com/{user}/{repo}/{branch}/{url_suffix}")        
-    else:
-        raise ValueError(f'source: "{source}" not recognized.')
-    latest = parse_version(f.text)
-
     # check installed distributions for versions
-    dist_version = get_version_from_distributions(package=package)
+    dist_version = get_package_version_from_distributions(package=package, warn=False)
 
     if not dist_version:
         # check sys.path for versions
-        sys_version = get_version_from_sys_path(package=package, path_to_version_file='/..', warn=warn)
+        sys_version = get_package_version_from_sys_path(package=package, path_to_version_file='/..', warn=warn)
         if not sys_version:
             return ''
         else: 
@@ -113,8 +139,12 @@ def get_package_version(repo, package, user='cajal', branch='main', tag=None, so
     else:
         __version__ = dist_version[0]
 
-    if __version__ != latest:
-        if warn:
-            warnings.warn(f'You are using {package} version {__version__}, which is not the latest version. Version {latest} is available. Consider upgrading to avoid conflicts with the database.')
+    if check_if_latest:
+        # check if package version is latest
+        latest = get_latest_version_from_github(**check_if_latest_kwargs)
+
+        if __version__ != latest:
+            if warn:
+                warnings.warn(f'You are using {package} version {__version__}, which is not the latest version. Version {latest} is available. Upgrade to avoid conflicts with the database.')
     
     return __version__
