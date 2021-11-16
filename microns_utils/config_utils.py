@@ -1,4 +1,9 @@
+"""
+Methods for configuring microns packages.
+"""
+
 import traceback
+
 
 try:
     import datajoint as dj
