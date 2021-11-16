@@ -6,6 +6,10 @@ import re
 import os
 import sys
 
+"""
+Methods for checking installed and latest versions of microns packages.
+"""
+
 
 def find_all_matching_files(name, path):
     """
