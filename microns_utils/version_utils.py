@@ -82,13 +82,14 @@ def get_package_version_from_distributions(package, warn=True):
     Note: packages installed as editable (i.e. pip install -e) will not be found.
 
     :param package (str): name of package:
-    :returns (list): package version
+    :returns (str): package version
     """
     version = [dist.version for dist in metadata.distributions() if dist.metadata["Name"] == package]
     if not version:
         if warn:
             warnings.warn('Package not found in distributions.')
-    return version
+        return ''
+    return version[0]
 
 
 def get_package_version_from_sys_path(package, path_to_version_file, warn=True):
@@ -98,7 +99,7 @@ def get_package_version_from_sys_path(package, path_to_version_file, warn=True):
     :param package (str): name of package. must match at the end of the path string in sys.path.
     :param path_to_version_file (str): path to version.py file relative to package path in sys.path.
     :param warn (bool): warnings enabled if True
-    :return (list): package version
+    :return (str): package version
     """
     path = ''.join([p + path_to_version_file for p in sys.path if re.findall(package+'$', p)])
     file = find_all_matching_files('version.py', path)
@@ -106,18 +107,18 @@ def get_package_version_from_sys_path(package, path_to_version_file, warn=True):
     if len(file) == 0:
         if warn:
             warnings.warn('No version.py file found.')
-        return []
+        return ''
 
     elif len(file) > 1: 
         if warn:
             warnings.warn('Multiple version.py files found.')
-        return []
+        return ''
 
     else:
         with open(file[0]) as f:
             lines = f.readlines()[0]
         
-    return [parse_version(lines)]
+    return parse_version(lines)
 
 
 def get_package_version(package, check_if_latest=False, check_if_latest_kwargs={}, warn=True):
@@ -139,9 +140,9 @@ def get_package_version(package, check_if_latest=False, check_if_latest_kwargs={
         if not sys_version:
             return ''
         else: 
-            __version__ = sys_version[0]
+            __version__ = sys_version
     else:
-        __version__ = dist_version[0]
+        __version__ = dist_version
 
     if check_if_latest:
         # check if package version is latest
