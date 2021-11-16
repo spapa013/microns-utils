@@ -1,3 +1,7 @@
+"""
+Methods for configuring microns packages.
+"""
+
 import traceback
 
 
