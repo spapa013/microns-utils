@@ -9,6 +9,7 @@ import warnings
 import re
 import os
 import sys
+import json
 
 
 def find_all_matching_files(name, path):
@@ -44,7 +45,7 @@ def parse_version(text: str):
     return parsed.group() if parsed else ""
 
 
-def get_latest_version_from_github(repo, user, branch, source, path_to_version_file, tag=None, warn=True):
+def get_latest_version_from_github(repo, owner, branch, source, path_to_version_file=None, warn=True):
     """
     Checks github for the latest version of package.
 
@@ -55,33 +56,34 @@ def get_latest_version_from_github(repo, user, branch, source, path_to_version_f
     :param source (str): 
         options: 
             "commit" - gets version of latest commit
-            "tag" - gets version from latest tag
-    :param path_to_version_file (str): path to version.py file from top of repo
+            "tag" - gets version of latest tag
+            "release" - gets version of latest release
+    :param path_to_version_file (str): path to version.py file from top of repo if source = "commit". 
     :param warn (bool): warnings enabled if True
+    :returns (str): returns latest version according to source if found, else ""
     """
-    if source == 'tag':
-        if tag is not None:
-            try:
-                f = requests.get(f"https://raw.githubusercontent.com/{user}/{repo}/{tag}/{path_to_version_file}")
-            except:
-                if warn:
-                    warnings.warn('Failed to reach Github during check for latest version.')
-                    traceback.print_exc()
+    latest = ""
+    try:
+        if source == 'commit':
+            assert path_to_version_file is not None, 'Provide path_to_version_file if source = "commit".'
+            f = requests.get(f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path_to_version_file}")
+            latest = parse_version(f.text)
+            
+        elif source == 'tag':
+            f = requests.get(f"https://api.github.com/repos/{owner}/{repo}/tags")
+            latest = parse_version(json.loads(f.text)[0]['name'][1:])
+            
+        elif source == 'release':
+            f = requests.get(f"https://api.github.com/repos/{owner}/{repo}/releases")
+            latest = parse_version(json.loads(f.text)[0]['tag_name'][1:])
         else:
-            raise ValueError('Provide arg "tag".')
+            raise ValueError(f'source: "{source}" not recognized. Options include: "commit", "tag", "release". ')
+    except:
+        if warn:
+            warnings.warn('Failed to reach Github during check for latest version.')
+            traceback.print_exc()
 
-    elif source == 'commit':
-        try:
-            f = requests.get(f"https://raw.githubusercontent.com/{user}/{repo}/{branch}/{path_to_version_file}")
-        except:
-            if warn:
-                warnings.warn('Failed to reach Github during check for latest version.')
-                traceback.print_exc()       
-    
-    else:
-        raise ValueError(f'source: "{source}" not recognized.')
-
-    return parse_version(f.text)
+    return latest
 
 
 def get_package_version_from_distributions(package, warn=True):
