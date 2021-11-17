@@ -10,6 +10,7 @@ import re
 import os
 import sys
 import json
+from pathlib import Path
 
 
 def find_all_matching_files(name, path):
@@ -23,7 +24,7 @@ def find_all_matching_files(name, path):
     result = []
     for root, _, files in os.walk(path):
         if name in files:
-            result.append(os.path.join(root, name))
+            result.append(Path(os.path.join(root, name)))
     return result
 
 
@@ -45,22 +46,21 @@ def parse_version(text: str):
     return parsed.group() if parsed else ""
 
 
-def get_latest_version_from_github(repo, owner, branch, source, path_to_version_file=None, warn=True):
+def get_latest_version_from_github(owner, repo, source, branch='main', path_to_version_file=None, warn=True):
     """
     Checks github for the latest version of package.
 
-    :param repo (str): name of repository that contains package
-    :param user (str): owner of repository
-    :param branch (str): branch of repository (if source='commit')
-    :param tag (str): specifed tag  (if source='tag')
+    :param repo (str): Name of repository that contains package
+    :param user (str): Owner of repository
     :param source (str): 
         options: 
-            "commit" - gets version of latest commit
-            "tag" - gets version of latest tag
-            "release" - gets version of latest release
-    :param path_to_version_file (str): path to version.py file from top of repo if source = "commit". 
-    :param warn (bool): warnings enabled if True
-    :returns (str): returns latest version according to source if found, else ""
+            "commit" - Gets version of latest commit
+            "tag" - Gets version of latest tag
+            "release" - Gets version of latest release
+    :param branch (str): Branch of repository if source='commit', defaults to 'main'.
+    :param path_to_version_file (str): Path to version.py file from top of repo if source = "commit". 
+    :param warn (bool): If true, warnings enabled.
+    :returns (str): If successful, returns latest version, otherwise returns "".
     """
     latest = ""
     try:
@@ -76,6 +76,7 @@ def get_latest_version_from_github(repo, owner, branch, source, path_to_version_
         elif source == 'release':
             f = requests.get(f"https://api.github.com/repos/{owner}/{repo}/releases")
             latest = parse_version(json.loads(f.text)[0]['tag_name'][1:])
+        
         else:
             raise ValueError(f'source: "{source}" not recognized. Options include: "commit", "tag", "release". ')
     except:
@@ -92,7 +93,7 @@ def get_package_version_from_distributions(package, warn=True):
     Note: packages installed as editable (i.e. pip install -e) will not be found.
 
     :param package (str): name of package:
-    :returns (str): package version
+    :returns (str):  If successful, returns version, otherwise returns "".
     """
     version = [dist.version for dist in metadata.distributions() if dist.metadata["Name"] == package]
     if not version:
@@ -109,9 +110,9 @@ def get_package_version_from_sys_path(package, path_to_version_file, warn=True):
     :param package (str): name of package. must match at the end of the path string in sys.path.
     :param path_to_version_file (str): path to version.py file relative to package path in sys.path.
     :param warn (bool): warnings enabled if True
-    :return (str): package version
+    :return (str): If successful, returns version, otherwise returns "".
     """
-    path = ''.join([p + path_to_version_file for p in sys.path if re.findall(package+'$', p)])
+    path = [Path(p).joinpath(path_to_version_file) for p in sys.path if re.findall(package+'$', p)][0]
     file = find_all_matching_files('version.py', path)
 
     if len(file) == 0:
@@ -146,7 +147,7 @@ def get_package_version(package, check_if_latest=False, check_if_latest_kwargs={
 
     if not dist_version:
         # check sys.path for versions
-        sys_version = get_package_version_from_sys_path(package=package, path_to_version_file='/..', warn=warn)
+        sys_version = get_package_version_from_sys_path(package=package, path_to_version_file='..', warn=warn)
         if not sys_version:
             return ''
         else: 
