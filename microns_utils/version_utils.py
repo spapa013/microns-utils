@@ -28,12 +28,19 @@ def find_all_matching_files(name, path):
 
 def parse_version(text: str):
     """
-    Parses the text from version.py and returns the version. 
-
+    Parses the text from version.py, where version.py contains one variable:
+    
+    __version__ = "x.y.z", where "x.y.z" must follow semantic versioning (https://semver.org/).
+    
+    Function is also compatible with a direct version input, i.e.: "x.y.z". 
+    
     :param text (str): the text from the version.py file.
-    :returns (str): version
+    :returns (str): version if parsed successfully else ""
     """
-    return ''.join(re.findall("[\d.]", text))
+    semver = "^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
+    text = text.split('=')[1].strip(' "'" '") if len(text.split('='))>1 else text.strip(' "'" '")
+    parsed = re.search(semver, text)
+    return parsed.group() if parsed else ""
 
 
 def get_latest_version_from_github(repo, user, branch, source, path_to_version_file, tag=None, warn=True):
