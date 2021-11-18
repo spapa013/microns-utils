@@ -4,7 +4,10 @@ Methods for checking installed and latest versions of microns packages.
 
 import traceback
 import requests
-from importlib import metadata
+try:
+    from importlib import metadata
+except ImportError:
+    import importlib_metadata as metadata
 import warnings
 import re
 import os
