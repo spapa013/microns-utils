@@ -46,7 +46,7 @@ def parse_version(text: str):
     return parsed.group() if parsed else ""
 
 
-def get_latest_version_from_github(owner, repo, source, branch='main', path_to_version_file=None, warn=True):
+def check_latest_version_from_github(owner, repo, source, branch='main', path_to_version_file=None, warn=True):
     """
     Checks github for the latest version of package.
 
@@ -65,6 +65,7 @@ def get_latest_version_from_github(owner, repo, source, branch='main', path_to_v
     latest = ""
     try:
         if source == 'commit':
+            assert branch is not None, 'Provide branch if source = "commit".'
             assert path_to_version_file is not None, 'Provide path_to_version_file if source = "commit".'
             f = requests.get(f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path_to_version_file}")
             latest = parse_version(f.text)
@@ -87,7 +88,7 @@ def get_latest_version_from_github(owner, repo, source, branch='main', path_to_v
     return latest
 
 
-def get_package_version_from_distributions(package, warn=True):
+def check_package_version_from_distributions(package, warn=True):
     """
     Checks importlib metadata for an installed version of the package. 
     Note: packages installed as editable (i.e. pip install -e) will not be found.
@@ -103,7 +104,7 @@ def get_package_version_from_distributions(package, warn=True):
     return version[0]
 
 
-def get_package_version_from_sys_path(package, path_to_version_file, warn=True):
+def check_package_version_from_sys_path(package, path_to_version_file, warn=True):
     """
     Checks sys.path for package and returns version from internal version.py file.
     
@@ -132,22 +133,22 @@ def get_package_version_from_sys_path(package, path_to_version_file, warn=True):
     return parse_version(lines)
 
 
-def get_package_version(package, check_if_latest=False, check_if_latest_kwargs={}, warn=True):
+def check_package_version(package, check_if_latest=False, check_if_latest_kwargs={}, warn=True):
     """
-    Gets package version.
+    Checks package version.
 
     :param package (str): name of package (contains setup.py)
     :param check_if_latest (bool): if True, checks if installed version matches latest version on Github 
-    :check_if_latest_kwargs (dict): kwargs to pass to "get_latest_version_from_github". 
+    :check_if_latest_kwargs (dict): kwargs to pass to :func:`~version_utils.check_latest_version_from_github`
     :param warn (bool): warnings enabled if True
     :returns (str): current package version
     """
     # check installed distributions for versions
-    dist_version = get_package_version_from_distributions(package=package, warn=False)
+    dist_version = check_package_version_from_distributions(package=package, warn=False)
 
     if not dist_version:
         # check sys.path for versions
-        sys_version = get_package_version_from_sys_path(package=package, path_to_version_file='..', warn=warn)
+        sys_version = check_package_version_from_sys_path(package=package, path_to_version_file='..', warn=warn)
         if not sys_version:
             return ''
         else: 
@@ -157,7 +158,7 @@ def get_package_version(package, check_if_latest=False, check_if_latest_kwargs={
 
     if check_if_latest:
         # check if package version is latest
-        latest = get_latest_version_from_github(**check_if_latest_kwargs)
+        latest = check_latest_version_from_github(**check_if_latest_kwargs)
 
         if __version__ != latest:
             if warn:
