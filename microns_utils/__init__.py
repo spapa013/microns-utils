@@ -1,5 +1,8 @@
 from . import version_utils
 from .version import __version__
 
-def get_latest_version_from_github():
-    return version_utils.get_latest_version_from_github(repo='microns-utils', owner='cajal', branch='main', source='commit', path_to_version_file='microns_utils/version.py', tag=None, warn=True)
+def check_latest_version_from_github(owner='cajal', repo='microns-utils', source='tag', branch=None, path_to_version_file=None, warn=True):
+    """
+    Wrapper for :func:`~version_utils.check_latest_version_from_github`
+    """
+    return version_utils.check_latest_version_from_github(owner=owner, repo=repo, source=source, branch=branch, path_to_version_file=path_to_version_file, warn=warn)
