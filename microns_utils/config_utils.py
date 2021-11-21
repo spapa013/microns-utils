@@ -93,7 +93,7 @@ djp_mapping = {
 
 def add_datajoint_plus(module):
     """
-    Adds DataJointPlus to the DataJoint tables inside the module.
+    Adds DataJointPlus recursively to the DataJoint tables inside the module.
     """
     for name in dir(module):
         obj = getattr(module, name)
