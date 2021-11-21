@@ -103,7 +103,7 @@ def add_datajoint_plus(module):
     return module
 
 
-def _create_vm(schema_name:str, external_stores=None, adapter_objects=None):
+def create_vm(schema_name:str, external_stores=None, adapter_objects=None):
     """
     Creates a virtual module after registering the external stores, and includes the adapter objects in the vm. 
 
