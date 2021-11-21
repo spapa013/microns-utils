@@ -102,15 +102,3 @@ def add_datajoint_plus(module):
             add_datajoint_plus(obj)
     return module
 
-
-def create_vm(schema_name:str, external_stores=None, adapter_objects=None):
-    """
-    Creates a virtual module after registering the external stores, and includes the adapter objects in the vm. 
-
-    Creating tables disabled from virtual modules. 
-    """
-    
-    if external_stores is not None:
-        register_externals(external_stores)
-    
-    return dj.create_virtual_module(schema_name, schema_name, add_objects=adapter_objects, create_tables=False)
