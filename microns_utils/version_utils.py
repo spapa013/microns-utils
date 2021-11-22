@@ -53,8 +53,8 @@ def check_latest_version_from_github(owner, repo, source, branch='main', path_to
     """
     Checks github for the latest version of package.
 
+    :param owner (str): Owner of repository
     :param repo (str): Name of repository that contains package
-    :param user (str): Owner of repository
     :param source (str): 
         options: 
             "commit" - Gets version of latest commit
@@ -89,6 +89,18 @@ def check_latest_version_from_github(owner, repo, source, branch='main', path_to
             traceback.print_exc()
 
     return latest
+
+
+def latest_github_version_checker(owner, repo):
+    """
+    Returns a function to check latest version from github.
+    
+    :param owner (str): Owner of repository
+    :param repo (str): Name of repository that contains package
+    """
+    def inner(source='tag', branch=None, path_to_version_file=None, warn=True):
+        return check_latest_version_from_github(owner=owner, repo=repo, source=source, branch=branch, path_to_version_file=path_to_version_file, warn=warn) 
+    return inner
 
 
 def check_package_version_from_distributions(package, warn=True):
