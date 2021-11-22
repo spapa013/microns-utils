@@ -100,7 +100,6 @@ def add_datajoint_plus(module):
         if inspect.isclass(obj) and issubclass(obj, dj.Table) and not issubclass(obj, djp.VirtualModule):
             obj.__bases__ = (djp_mapping[obj.__base__.__name__],)
             add_datajoint_plus(obj)
-    return module
 
 
 def _create_vm(schema_name:str, external_stores=None, adapter_objects=None):
