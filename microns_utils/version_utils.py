@@ -94,11 +94,22 @@ def check_latest_version_from_github(owner, repo, source, branch='main', path_to
 def latest_github_version_checker(owner, repo):
     """
     Returns a function to check latest version from github.
-    
+
     :param owner (str): Owner of repository
     :param repo (str): Name of repository that contains package
     """
     def inner(source='tag', branch=None, path_to_version_file=None, warn=True):
+        """
+        :param source (str): 
+            options: 
+                "commit" - Gets version of latest commit
+                "tag" - Gets version of latest tag
+                "release" - Gets version of latest release
+        :param branch (str): Branch of repository if source='commit', defaults to 'main'.
+        :param path_to_version_file (str): Path to version.py file from top of repo if source = "commit". 
+        :param warn (bool): If true, warnings enabled.
+        :returns (str): If successful, returns latest version, otherwise returns "".
+        """
         return check_latest_version_from_github(owner=owner, repo=repo, source=source, branch=branch, path_to_version_file=path_to_version_file, warn=warn) 
     return inner
 
