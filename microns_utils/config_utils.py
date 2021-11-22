@@ -3,14 +3,13 @@ Methods for configuring microns packages.
 """
 
 import traceback
-
-
+import inspect
 try:
     import datajoint as dj
 except:
     traceback.print_exc()
     raise ImportError('DataJoint package not found.')
-
+import datajoint.datajoint_plus as djp
 
 def enable_datajoint_flags(enable_python_native_blobs=True):
     """
@@ -69,7 +68,41 @@ def register_adapters(adapter_objects, context=None):
         context[name] = adapter
 
 
-def create_vm(schema_name:str, external_stores=None, adapter_objects=None):
+def register_bases(base, module):
+    """
+    Recursive function that adds __bases__ from DataJoint Tables in base to matching classes in module.
+    :param base (module): source module with classes to. 
+    :param module (module): mapping between classes and methods
+    """
+    for name in dir(base):
+        if hasattr(module, name) and inspect.isclass(getattr(module, name)) and issubclass(getattr(module, name), dj.Table):
+            base_cls, module_cls = getattr(base, name), getattr(module, name)
+            assert base_cls not in module_cls.__bases__, f'Class "{name}" of base already in __base__ of module.'
+            module_cls.__bases__ = (base_cls, *module_cls.__bases__)
+            register_bases(base_cls, module_cls)
+
+
+djp_mapping = {
+    'Lookup': djp.VirtualLookup,
+    'Manual': djp.VirtualManual,
+    'Computed': djp.VirtualComputed,
+    'Imported': djp.VirtualImported,
+    'Part': djp.VirtualPart
+}
+
+
+def add_datajoint_plus(module):
+    """
+    Adds DataJointPlus recursively to the DataJoint tables inside the module.
+    """
+    for name in dir(module):
+        obj = getattr(module, name)
+        if inspect.isclass(obj) and issubclass(obj, dj.Table) and not issubclass(obj, djp.VirtualModule):
+            obj.__bases__ = (djp_mapping[obj.__base__.__name__],)
+            add_datajoint_plus(obj)
+
+
+def _create_vm(schema_name:str, external_stores=None, adapter_objects=None):
     """
     Creates a virtual module after registering the external stores, and includes the adapter objects in the vm. 
 
