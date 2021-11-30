@@ -41,7 +41,8 @@ def parse_version(text: str):
     :returns (str): version if parsed successfully else ""
     """
     semver = "^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
-    text = re.search('__version__.*', text).group()
+    version_search = re.search('__version__.*', text).group()
+    text = version_search if version_search is not None else text
     text = text.split('=')[1].strip(' "'" '") if len(text.split('='))>1 else text.strip(' "'" '")
     parsed = re.search(semver, text)
     return parsed.group() if parsed else ""
@@ -83,7 +84,7 @@ def check_latest_version_from_github(owner, repo, source, branch='main', path_to
             raise ValueError(f'source: "{source}" not recognized. Options include: "commit", "tag", "release". ')
     except:
         if warn:
-            warnings.warn('Failed to reach Github during check for latest version.')
+            warnings.warn('Failed to check latest version from Github.')
             traceback.print_exc()
 
     return latest
