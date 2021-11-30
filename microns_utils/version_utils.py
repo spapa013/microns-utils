@@ -33,17 +33,15 @@ def find_all_matching_files(name, path):
 
 def parse_version(text: str):
     """
-    Parses the text from version.py, where version.py contains one variable:
+    Extracts __version__ from raw text if __version__ follows semantic versioning (https://semver.org/).
     
-    __version__ = "x.y.z", where "x.y.z" must follow semantic versioning (https://semver.org/).
+    Also compatible with a direct semantic version input, i.e.: "x.y.z". 
     
-    Function is also compatible with a direct version input, i.e.: "x.y.z". 
-    
-    :param text (str): the text from the version.py file.
+    :param text (str): the text containing the version.
     :returns (str): version if parsed successfully else ""
     """
     semver = "^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
-    text = text.strip('\n')
+    text = re.search('__version__.*', text).group()
     text = text.split('=')[1].strip(' "'" '") if len(text.split('='))>1 else text.strip(' "'" '")
     parsed = re.search(semver, text)
     return parsed.group() if parsed else ""
