@@ -99,6 +99,7 @@ def add_datajoint_plus(module):
         obj = getattr(module, name)
         if inspect.isclass(obj) and issubclass(obj, dj.Table) and not issubclass(obj, djp.VirtualModule):
             obj.__bases__ = (djp_mapping[obj.__base__.__name__],)
+            obj.parse_hash_info_from_header()
             add_datajoint_plus(obj)
 
 

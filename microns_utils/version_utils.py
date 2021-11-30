@@ -33,17 +33,16 @@ def find_all_matching_files(name, path):
 
 def parse_version(text: str):
     """
-    Parses the text from version.py, where version.py contains one variable:
+    Extracts __version__ from raw text if __version__ follows semantic versioning (https://semver.org/).
     
-    __version__ = "x.y.z", where "x.y.z" must follow semantic versioning (https://semver.org/).
+    Also compatible with a direct semantic version input, i.e.: "x.y.z". 
     
-    Function is also compatible with a direct version input, i.e.: "x.y.z". 
-    
-    :param text (str): the text from the version.py file.
+    :param text (str): the text containing the version.
     :returns (str): version if parsed successfully else ""
     """
     semver = "^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
-    text = text.strip('\n')
+    version_search = re.search('__version__.*', text)
+    text = version_search.group() if version_search is not None else text
     text = text.split('=')[1].strip(' "'" '") if len(text.split('='))>1 else text.strip(' "'" '")
     parsed = re.search(semver, text)
     return parsed.group() if parsed else ""
@@ -85,7 +84,7 @@ def check_latest_version_from_github(owner, repo, source, branch='main', path_to
             raise ValueError(f'source: "{source}" not recognized. Options include: "commit", "tag", "release". ')
     except:
         if warn:
-            warnings.warn('Failed to reach Github during check for latest version.')
+            warnings.warn('Failed to check latest version from Github.')
             traceback.print_exc()
 
     return latest
@@ -94,11 +93,22 @@ def check_latest_version_from_github(owner, repo, source, branch='main', path_to
 def latest_github_version_checker(owner, repo):
     """
     Returns a function to check latest version from github.
-    
+
     :param owner (str): Owner of repository
     :param repo (str): Name of repository that contains package
     """
     def inner(source='tag', branch=None, path_to_version_file=None, warn=True):
+        """
+        :param source (str): 
+            options: 
+                "commit" - Gets version of latest commit
+                "tag" - Gets version of latest tag
+                "release" - Gets version of latest release
+        :param branch (str): Branch of repository if source='commit', defaults to 'main'.
+        :param path_to_version_file (str): Path to version.py file from top of repo if source = "commit". 
+        :param warn (bool): If true, warnings enabled.
+        :returns (str): If successful, returns latest version, otherwise returns "".
+        """
         return check_latest_version_from_github(owner=owner, repo=repo, source=source, branch=branch, path_to_version_file=path_to_version_file, warn=warn) 
     return inner
 
