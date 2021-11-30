@@ -41,8 +41,8 @@ def parse_version(text: str):
     :returns (str): version if parsed successfully else ""
     """
     semver = "^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
-    version_search = re.search('__version__.*', text).group()
-    text = version_search if version_search is not None else text
+    version_search = re.search('__version__.*', text)
+    text = version_search.group() if version_search is not None else text
     text = text.split('=')[1].strip(' "'" '") if len(text.split('='))>1 else text.strip(' "'" '")
     parsed = re.search(semver, text)
     return parsed.group() if parsed else ""
