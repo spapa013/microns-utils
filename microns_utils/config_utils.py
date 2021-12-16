@@ -68,21 +68,16 @@ def register_adapters(adapter_objects, context=None):
         context[name] = adapter
 
 
-def register_bases(base, module):
-    """
-    Recursive function that adds __bases__ from DataJoint Tables in base to matching classes in module.
-    :param base (module): source module with classes to. 
-    :param module (module): mapping between classes and methods
-    """
-    for name in dir(base):
-        if hasattr(module, name) and inspect.isclass(getattr(module, name)) and issubclass(getattr(module, name), dj.Table):
-            base_cls, module_cls = getattr(base, name), getattr(module, name)
-            assert base_cls not in module_cls.__bases__, f'Class "{name}" of base already in __base__ of module.'
-            module_cls.__bases__ = (base_cls, *module_cls.__bases__)
-            register_bases(base_cls, module_cls)
-
-
 djp_mapping = {
+    'Lookup': djp.Lookup,
+    'Manual': djp.Manual,
+    'Computed': djp.Computed,
+    'Imported': djp.Imported,
+    'Part': djp.Part
+}
+
+
+djp_virtual_mapping = {
     'Lookup': djp.VirtualLookup,
     'Manual': djp.VirtualManual,
     'Computed': djp.VirtualComputed,
@@ -91,16 +86,36 @@ djp_mapping = {
 }
 
 
-def add_datajoint_plus(module):
+def add_datajoint_plus(module, virtual=False):
     """
     Adds DataJointPlus recursively to the DataJoint tables inside the module.
     """
     for name in dir(module):
         obj = getattr(module, name)
-        if inspect.isclass(obj) and issubclass(obj, dj.Table) and not issubclass(obj, djp.VirtualModule):
-            obj.__bases__ = (djp_mapping[obj.__base__.__name__],)
-            obj.parse_hash_info_from_header()
-            add_datajoint_plus(obj)
+        if virtual:
+            if inspect.isclass(obj) and issubclass(obj, dj.Table) and not issubclass(obj, djp.VirtualModule):
+                obj.__bases__ = (djp_virtual_mapping[obj.__base__.__name__],)
+                obj.parse_hash_info_from_header()
+                add_datajoint_plus(obj)
+        else:
+            if inspect.isclass(obj) and issubclass(obj, dj.Table) and not issubclass(obj, djp.Base):
+                obj.__bases__ = (djp_mapping[obj.__base__.__name__],) if not virtual else (djp_virtual_mapping[obj.__base__.__name__],)
+                obj.parse_hash_info_from_header()
+                add_datajoint_plus(obj)
+
+
+def reassign_master_attribute(module):
+    """
+    Overwrite .master attribute in DataJoint part tables to map to master class from current module instead of inherited module
+    """
+    for name in dir(module):
+        # Get DataJoint tables
+        if inspect.isclass(getattr(module, name)) and issubclass(getattr(module, name), dj.Table):
+            obj = getattr(module, name)
+            for nested in dir(obj):
+                # Get Part tables
+                if inspect.isclass(getattr(obj, nested)) and issubclass(getattr(obj, nested), dj.Part):
+                    setattr(getattr(obj, nested), '_master', obj)
 
 
 def _create_vm(schema_name:str, external_stores=None, adapter_objects=None):
