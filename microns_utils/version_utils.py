@@ -8,7 +8,7 @@ try:
     from importlib import metadata
 except ImportError:
     import importlib_metadata as metadata
-import warnings
+import logging
 import re
 import os
 import sys
@@ -84,7 +84,7 @@ def check_latest_version_from_github(owner, repo, source, branch='main', path_to
             raise ValueError(f'source: "{source}" not recognized. Options include: "commit", "tag", "release". ')
     except:
         if warn:
-            warnings.warn('Failed to check latest version from Github.')
+            logging.warning('Failed to check latest version from Github.')
             traceback.print_exc()
 
     return latest
@@ -124,7 +124,7 @@ def check_package_version_from_distributions(package, warn=True):
     version = [dist.version for dist in metadata.distributions() if dist.metadata["Name"] == package]
     if not version:
         if warn:
-            warnings.warn('Package not found in distributions.')
+            logging.warning('Package not found in distributions.')
         return ''
     return version[0]
 
@@ -143,12 +143,12 @@ def check_package_version_from_sys_path(package, path_to_version_file, warn=True
 
     if len(file) == 0:
         if warn:
-            warnings.warn('No version.py file found.')
+            logging.warning('No version.py file found.')
         return ''
 
     elif len(file) > 1: 
         if warn:
-            warnings.warn('Multiple version.py files found.')
+            logging.warning('Multiple version.py files found.')
         return ''
 
     else:
@@ -187,6 +187,6 @@ def check_package_version(package, check_if_latest=False, check_if_latest_kwargs
 
         if __version__ != latest:
             if warn:
-                warnings.warn(f'You are using {package} version {__version__}, which is not the latest version. Version {latest} is available. Upgrade to avoid conflicts with the database.')
+                logging.warning(f'You are using {package} version {__version__}, which does not match the latest version on Github, {latest}.')
     
     return __version__
