@@ -140,6 +140,7 @@ def check_package_version_from_sys_path(package, path_to_version_file, prefix=''
     :return (str): If successful, returns version, otherwise returns "".
     """
     paths = [Path(p).joinpath(path_to_version_file) for p in sys.path if re.findall(Path(prefix).joinpath(package).as_posix()+'$', p)]
+    
     if len(paths)>1:
         if warn:
             logging.warning(f'The following paths to package {package} found in sys.path. Consider adding a prefix for further specification.')
@@ -166,11 +167,12 @@ def check_package_version_from_sys_path(package, path_to_version_file, prefix=''
     return parse_version(lines)
 
 
-def check_package_version(package, check_if_latest=False, check_if_latest_kwargs={}, warn=True):
+def check_package_version(package, prefix='', check_if_latest=False, check_if_latest_kwargs={}, warn=True):
     """
     Checks package version.
 
     :param package (str): name of package (contains setup.py)
+    :param prefix (str): path to prepend to package for check_package_version_from_sys_path
     :param check_if_latest (bool): if True, checks if installed version matches latest version on Github 
     :check_if_latest_kwargs (dict): kwargs to pass to :func:`~version_utils.check_latest_version_from_github`
     :param warn (bool): warnings enabled if True
@@ -181,7 +183,7 @@ def check_package_version(package, check_if_latest=False, check_if_latest_kwargs
 
     if not dist_version:
         # check sys.path for versions
-        sys_version = check_package_version_from_sys_path(package=package, path_to_version_file='..', warn=warn)
+        sys_version = check_package_version_from_sys_path(package=package, prefix=prefix, path_to_version_file='..', warn=warn)
         if not sys_version:
             return ''
         else: 
