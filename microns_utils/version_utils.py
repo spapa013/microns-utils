@@ -129,30 +129,38 @@ def check_package_version_from_distributions(package, warn=True):
     return version[0]
 
 
-def check_package_version_from_sys_path(package, path_to_version_file, warn=True):
+def check_package_version_from_sys_path(package, path_to_version_file, prefix='', warn=True):
     """
     Checks sys.path for package and returns version from internal version.py file.
     
     :param package (str): name of package. must match at the end of the path string in sys.path.
     :param path_to_version_file (str): path to version.py file relative to package path in sys.path.
+    :param prefix (str): path to prepend to package
     :param warn (bool): warnings enabled if True
     :return (str): If successful, returns version, otherwise returns "".
     """
-    path = [Path(p).joinpath(path_to_version_file) for p in sys.path if re.findall(package+'$', p)][0]
-    file = find_all_matching_files('version.py', path)
+    paths = [Path(p).joinpath(path_to_version_file) for p in sys.path if re.findall(Path(prefix).joinpath(package).as_posix()+'$', p)]
+    if len(paths)>1:
+        if warn:
+            logging.warning(f'The following paths to package {package} found in sys.path. Consider adding a prefix for further specification.')
+            [print(p) for p in paths]
+        return ''
+    
+    elif len(paths) == 0:
+        if warn:
+            logging.warning(f'No paths matching {package} found in sys.path.')
+        return ''
+    
+    else:
+        files = find_all_matching_files('version.py', paths[0])
 
-    if len(file) == 0:
+    if len(files) == 0:
         if warn:
             logging.warning('No version.py file found.')
         return ''
 
-    elif len(file) > 1: 
-        if warn:
-            logging.warning('Multiple version.py files found.')
-        return ''
-
     else:
-        with open(file[0]) as f:
+        with open(files[0]) as f:
             lines = f.readlines()[0]
         
     return parse_version(lines)
