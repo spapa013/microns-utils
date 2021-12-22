@@ -139,17 +139,19 @@ def check_package_version_from_sys_path(package, path_to_version_file, prefix=''
     :param warn (bool): warnings enabled if True
     :return (str): If successful, returns version, otherwise returns "".
     """
+    err_base_str = f'Could not get version for package {package} from sys.path because '
+    
     paths = [Path(p).joinpath(path_to_version_file) for p in sys.path if re.findall(Path(prefix).joinpath(package).as_posix()+'$', p)]
     
     if len(paths)>1:
         if warn:
-            logging.warning(f'The following paths to package {package} found in sys.path. Consider adding a prefix for further specification.')
+            logging.warning(err_base_str + f'multiple paths containing {package} were found in sys.path. Consider adding a prefix for further specification.')
             [print(p) for p in paths]
         return ''
     
     elif len(paths) == 0:
         if warn:
-            logging.warning(f'No paths matching {package} found in sys.path.')
+            logging.warning(err_base_str + f'no paths matching {package} were found in sys.path.')
         return ''
     
     else:
@@ -157,7 +159,7 @@ def check_package_version_from_sys_path(package, path_to_version_file, prefix=''
 
     if len(files) == 0:
         if warn:
-            logging.warning('No version.py file found.')
+            logging.warning(err_base_str + 'no version.py file was found.')
         return ''
 
     else:
