@@ -145,7 +145,7 @@ def check_package_version_from_sys_path(package, path_to_version_file, prefix=''
     
     if len(paths)>1:
         if warn:
-            logging.warning(err_base_str + f'multiple paths containing {package} were found in sys.path. Consider adding a prefix for further specification.')
+            logging.warning(err_base_str + f'{len(paths)} paths containing {package} were found in sys.path. Consider adding a prefix for further specification.')
             [print(p) for p in paths]
         return ''
     
