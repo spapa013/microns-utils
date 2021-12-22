@@ -139,8 +139,8 @@ def check_package_version_from_sys_path(package, path_to_version_file, prefix=''
     :param warn (bool): warnings enabled if True
     :return (str): If successful, returns version, otherwise returns "".
     """
-    err_base_str = f'Could not get version for package {package} from sys.path because '
-    
+    err_base_str = f'Could not get version for package {package} because '
+
     paths = [Path(p).joinpath(path_to_version_file) for p in sys.path if re.findall(Path(prefix).joinpath(package).as_posix()+'$', p)]
     
     if len(paths)>1:
