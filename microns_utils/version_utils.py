@@ -14,21 +14,7 @@ import os
 import sys
 import json
 from pathlib import Path
-
-
-def find_all_matching_files(name, path):
-    """
-    Finds all files matching filename within path.
-
-    :param name (str): file name to search
-    :param path (str): path to search within
-    :returns (list): returns list of matching paths to filenames or empty list if no matches found. 
-    """
-    result = []
-    for root, _, files in os.walk(path):
-        if name in files:
-            result.append(Path(os.path.join(root, name)))
-    return result
+from .filepath_utils import find_all_matching_files
 
 
 def parse_version(text: str):
