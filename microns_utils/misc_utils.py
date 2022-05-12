@@ -1,1 +1,1 @@
-from datajoint_plus.utils import wrap, unwrap, classproperty
+from datajoint_plus.utils import classproperty, wrap
