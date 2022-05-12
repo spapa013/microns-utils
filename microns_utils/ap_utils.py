@@ -5,27 +5,22 @@ CloudVolume (https://pypi.org/project/cloud-volume/)
 CAVE (https://pypi.org/project/caveclient/)
 MeshParty (https://pypi.org/project/meshparty/)
 """
+
 import logging
-import traceback
+from cloudvolume import CloudVolume
+from caveclient import CAVEclient
 
-try:
-    import cloudvolume
-    import caveclient
-    import meshparty
-except ImportError:
-    pass
-
+logger = logging.getLogger(__name__)
 
 def set_CAVE_client(datastack, ver=None):
-    from caveclient import CAVEclient
     client = CAVEclient(datastack)
+    
     if ver is not None:
-        client.materialize._version = ver
-        logging.info(f'Instantiated CAVE client with latest version {client.materialize.version}')
-        
-    else:
-        logging.info(f'Instantiated CAVE client with latest version {client.materialize.version}')
-        return client
+        client.materialize._version = int(ver)
+
+    logger.info(f'Instantiated CAVE client with version: {client.materialize.version}. Most recent version: {client.materialize.most_recent_version()}')
+    
+    return client
 
 
 def get_stats_from_cv_path(cv_path, mip=None):
@@ -60,6 +55,6 @@ def get_stats_from_cv_path(cv_path, mip=None):
                 'voxel_offset' : voxel_offset
             }
 
-    cv = cloudvolume.CloudVolume(cv_path, use_https=True, progress=True)
+    cv = CloudVolume(cv_path, use_https=True, progress=True)
 
     return get_stats_for_mip(mip) if mip is not None else [get_stats_for_mip(mip) for mip in list(cv.available_mips)]
