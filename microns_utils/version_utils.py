@@ -10,7 +10,6 @@ except ImportError:
     import importlib_metadata as metadata
 import logging
 import re
-import os
 import sys
 import json
 from pathlib import Path
