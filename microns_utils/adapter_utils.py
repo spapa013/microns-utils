@@ -13,13 +13,16 @@ import logging
 
 from .filepath_utils import validate_filepath
 
-class FilePathAdapter(dj.AttributeAdapter):
+
+class Adapter(dj.AttributeAdapter):
     attribute_type = ''
 
     def __init__(self, attribute_type):
         self.attribute_type = attribute_type
         super().__init__()
-    
+
+
+class FilePathAdapter(Adapter):    
     def put(self, filepath):
         return validate_filepath(filepath)
 
@@ -27,13 +30,7 @@ class FilePathAdapter(dj.AttributeAdapter):
         return validate_filepath(filepath)
 
 
-class PickleAdapter(dj.AttributeAdapter):
-    attribute_type = '' 
-    
-    def __init__(self, attribute_type):
-        self.attribute_type = attribute_type
-        super().__init__()
-
+class PickleAdapter(Adapter):
     def put(self, object):
         return pickle.dumps(object)
 
@@ -41,19 +38,9 @@ class PickleAdapter(dj.AttributeAdapter):
         return pickle.loads(pickled)
 
 
-class MeshAdapter(dj.AttributeAdapter):
-    attribute_type = '' 
-    
-    def __init__(self, attribute_type):
-        self.attribute_type = attribute_type
-        super().__init__()
-    
-    def put(self, filepath):
-        return validate_filepath(filepath)
-
+class MeshAdapter(FilePathAdapter):
     def get(self, filepath):
-        # access the h5 file and return a mesh
-        filepath = validate_filepath(filepath)
+        filepath = super().get(filepath)
         return adapt_mesh_hdf5(filepath, filepath_has_timestamp=True)
 
 
