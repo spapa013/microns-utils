@@ -10,25 +10,10 @@ except ImportError:
     import importlib_metadata as metadata
 import logging
 import re
-import os
 import sys
 import json
 from pathlib import Path
-
-
-def find_all_matching_files(name, path):
-    """
-    Finds all files matching filename within path.
-
-    :param name (str): file name to search
-    :param path (str): path to search within
-    :returns (list): returns list of matching paths to filenames or empty list if no matches found. 
-    """
-    result = []
-    for root, _, files in os.walk(path):
-        if name in files:
-            result.append(Path(os.path.join(root, name)))
-    return result
+from .filepath_utils import find_all_matching_files
 
 
 def parse_version(text: str):
@@ -129,40 +114,52 @@ def check_package_version_from_distributions(package, warn=True):
     return version[0]
 
 
-def check_package_version_from_sys_path(package, path_to_version_file, warn=True):
+def check_package_version_from_sys_path(package, path_to_version_file, prefix='', warn=True):
     """
     Checks sys.path for package and returns version from internal version.py file.
     
     :param package (str): name of package. must match at the end of the path string in sys.path.
     :param path_to_version_file (str): path to version.py file relative to package path in sys.path.
+    :param prefix (str): path to prepend to package
     :param warn (bool): warnings enabled if True
     :return (str): If successful, returns version, otherwise returns "".
     """
-    path = [Path(p).joinpath(path_to_version_file) for p in sys.path if re.findall(package+'$', p)][0]
-    file = find_all_matching_files('version.py', path)
+    err_base_str = f'Could not get version for package {package} because '
 
-    if len(file) == 0:
+    paths = [Path(p).joinpath(path_to_version_file) for p in sys.path if re.findall(Path(prefix).joinpath(package).as_posix()+'$', p)]
+    
+    if len(paths)>1:
         if warn:
-            logging.warning('No version.py file found.')
+            logging.warning(err_base_str + f'{len(paths)} paths containing {package} were found in sys.path. Consider adding a prefix for further specification.')
+            [print(p) for p in paths]
         return ''
-
-    elif len(file) > 1: 
+    
+    elif len(paths) == 0:
         if warn:
-            logging.warning('Multiple version.py files found.')
+            logging.warning(err_base_str + f'no paths matching {package} were found in sys.path.')
+        return ''
+    
+    else:
+        files = find_all_matching_files('version.py', paths[0])
+
+    if len(files) == 0:
+        if warn:
+            logging.warning(err_base_str + 'no version.py file was found.')
         return ''
 
     else:
-        with open(file[0]) as f:
+        with open(files[0]) as f:
             lines = f.readlines()[0]
         
     return parse_version(lines)
 
 
-def check_package_version(package, check_if_latest=False, check_if_latest_kwargs={}, warn=True):
+def check_package_version(package, prefix='', check_if_latest=False, check_if_latest_kwargs={}, warn=True):
     """
     Checks package version.
 
     :param package (str): name of package (contains setup.py)
+    :param prefix (str): path to prepend to package for check_package_version_from_sys_path
     :param check_if_latest (bool): if True, checks if installed version matches latest version on Github 
     :check_if_latest_kwargs (dict): kwargs to pass to :func:`~version_utils.check_latest_version_from_github`
     :param warn (bool): warnings enabled if True
@@ -173,7 +170,7 @@ def check_package_version(package, check_if_latest=False, check_if_latest_kwargs
 
     if not dist_version:
         # check sys.path for versions
-        sys_version = check_package_version_from_sys_path(package=package, path_to_version_file='..', warn=warn)
+        sys_version = check_package_version_from_sys_path(package=package, prefix=prefix, path_to_version_file='..', warn=warn)
         if not sys_version:
             return ''
         else: 

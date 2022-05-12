@@ -1,0 +1,1 @@
+from datajoint_plus.utils import classproperty, wrap

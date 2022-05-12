@@ -7,6 +7,9 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'microns_utils', 'version.py')) as f:
     exec(f.read())
 
+with open(path.join(here, 'requirements.txt')) as f:
+    requirements = f.read().split()
+
 setup(
     name='microns-utils',
     version=__version__,
@@ -14,5 +17,5 @@ setup(
     author='Stelios Papadopoulos, Christos Papadopoulos',
     author_email='spapadop@bcm.edu, cpapadop@bcm.edu',
     packages=find_packages(exclude=[]),
-    install_requires=['numpy']
+    install_requires=requirements
 )
