@@ -1,7 +1,7 @@
 """
 Classes and methods for configuring microns packages.
 """
-import datajoint.datajoint_plus as djp
+import datajoint_plus as djp
 
 class SchemaConfig:
     """
