@@ -1,5 +1,5 @@
 h5py
-cloudvolume
+cloud-volume
 caveclient
 nglui
 datajoint-plus
