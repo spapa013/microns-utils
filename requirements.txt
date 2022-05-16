@@ -1,1 +1,5 @@
-numpy
+h5py
+cloudvolume
+caveclient
+nglui
+datajoint-plus
