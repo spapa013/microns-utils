@@ -1,3 +1,7 @@
+seaborn
+scipy
+ipyvolume
+decorator
 h5py
 cloud-volume
 caveclient

@@ -3,7 +3,6 @@ Methods for interacting with packages from Allen Institute and Seung lab from Pr
 
 CloudVolume (https://pypi.org/project/cloud-volume/)
 CAVE (https://pypi.org/project/caveclient/)
-MeshParty (https://pypi.org/project/meshparty/)
 """
 
 import logging
