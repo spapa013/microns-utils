@@ -6,6 +6,7 @@ CAVE (https://pypi.org/project/caveclient/)
 """
 
 import logging
+from datajoint_plus.utils import wrap
 from cloudvolume import CloudVolume
 from caveclient import CAVEclient
 
@@ -57,3 +58,17 @@ def get_stats_from_cv_path(cv_path, mip=None):
     cv = CloudVolume(cv_path, use_https=True, progress=True)
 
     return get_stats_for_mip(mip) if mip is not None else [get_stats_for_mip(mip) for mip in list(cv.available_mips)]
+
+
+def get_stack_from_cv_path(cv_path, mip, seg_ids=None):
+    """
+    Given a cloudvolume path and mip returns the data stack from cloudvolume.
+
+    :param cv_path (str): CloudVolume path
+    :param mip (int): the mip to get stack for
+    :param seg_ids (int): optional, the seg_ids to restrict to
+
+    :returns: data stack
+    """
+    cv = CloudVolume(cv_path, use_https=True, progress=True, fill_missing=True, mip=mip)
+    return cv.download(bbox=cv.bounds, segids=None if seg_ids is None else wrap(seg_ids)).squeeze()
