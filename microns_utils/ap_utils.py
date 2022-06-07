@@ -75,9 +75,9 @@ def set_CAVEclient(datastack='m65_public', ver=None, caveclient_kws={}):
         client.materialize._version = int(ver)
 
     if hasattr(client, 'materialize'):
-        logger.info(f'Instantiated CAVE client with datastack "{datastack}" and version: {client.materialize.version}. Most recent version: {client.materialize.most_recent_version()}')
+        logger.info(f'Instantiated CAVE client with datastack "{client.info.datastack_name}" and version: {client.materialize.version}. Most recent version: {client.materialize.most_recent_version()}')
     else:
-        logger.info(f'Instantiated CAVE client with datastack "{datastack}"')
+        logger.info(f'Instantiated CAVE client with datastack "{client.info.datastack_name}"')
    
     return client
 
