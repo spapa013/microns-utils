@@ -6,4 +6,5 @@ h5py
 cloud-volume
 caveclient
 nglui
+slackclient
 datajoint-plus
