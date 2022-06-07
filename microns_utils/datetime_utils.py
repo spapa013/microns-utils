@@ -33,15 +33,3 @@ def current_timestamp(tz='UTC', fmt=None):
     """
     return timezone_converter(datetime.utcnow(), 'UTC', tz, fmt=fmt)
 
-
-def current_timestamp_for_mysql(tz='UTC', fmt="%Y-%m-%d_%H:%M:%S"):
-    """
-    Returns current timestamp in desired timezone (per pytz nomenclature)
-
-    ```from pytz import common_timezones```
-
-    :param tz: (pytz.timezone) desired timezone
-    :param fmt: (str) optional - timestamp format to pass to strftime, defaults to mysql compatible format
-    :returns: (datetime.datetime) timestamp
-    """
-    return timezone_converter(datetime.utcnow(), 'UTC', tz, fmt=fmt)
