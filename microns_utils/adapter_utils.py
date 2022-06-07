@@ -44,6 +44,11 @@ class MeshAdapter(FilePathAdapter):
         return adapt_mesh_hdf5(filepath, filepath_has_timestamp=True)
 
 
+class NumpyAdapter(FilePathAdapter):
+    def get(self, filepath):
+        filepath = super().get(filepath)
+        return np.load(filepath, mmap_mode='r')
+
 def adapt_mesh_hdf5(filepath, parse_filepath_stem=True, filepath_has_timestamp=False, separator='__', timestamp_fmt="%Y-%m-%d_%H:%M:%S", return_type='namedtuple', as_lengths=False):
     """
     Reads from a mesh hdf5 and returns vertices, faces and additional information in the form of a namedtuple or optionally
