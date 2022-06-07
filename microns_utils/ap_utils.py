@@ -42,31 +42,21 @@ def set_CAVEclient(datastack='m65_public', ver=None, token=None):
         client = CAVEclient(datastack, auth_token=token)
     except Exception as e:
         if "invalid_token" in e.args[0]:
-            logging.error('Valid token not found.')
+            logging.error('Valid token not found. Returning unauthorized client.')
             client = CAVEclient()
-            print("""
-            New Tokens need to be acquired by hand. Please follow the following steps:
-                1) Go to: https://global.daf-apis.com/auth/api/v1/create_token to create a new token.
-                2) Log in with your Google credentials and copy the token shown afterward.
-            """)
-            token = input('Input new token OR input "CANCEL" to return the unauthorized client.')
-            if token == "CANCEL":
-                client.info._datastack_name = datastack
-                return client
-            else:
-                client.auth.save_token(token=token, overwrite=True)
-                logging.info(f'Token updated in {client.auth._token_file}. Previous tokens invalidated')
-                print("""
-                Update all environments with this token to avoid using expired tokens.
-                """)
-                client = CAVEclient(datastack)
+            client.auth.get_new_token()
+            client.info._datastack_name = datastack
+            return client
         
         elif "missing_tos" in e.args[0]:
             tos_url = "https://global.daf-apis.com/sticky_auth/api/v1/tos/2/accept"
-            logging.error(f'You need to accept the terms of service. {tos_url}')
-            print(tos_url)
-            print('After accepting the TOS, try re-running.')
-            return
+            logging.error(f'You need to accept the terms of service. Returning unauthorized client.')
+            logging.info(f'Terms of service url: {tos_url}')
+            print(f'Terms of service url: {tos_url}')
+            print('After accepting the TOS, try running again.')
+            client = CAVEclient()
+            client.info._datastack_name = datastack
+            return client
 
         else:
             logging.exception(e)
