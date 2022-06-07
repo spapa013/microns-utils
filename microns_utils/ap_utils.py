@@ -14,32 +14,41 @@ from caveclient import CAVEclient
 
 logger = logging.getLogger(__name__)
 
-default_public_datastack = 'minnie65_public_v117'
-default_live_datastack = 'minnie65_phase3_v1'
+m65_public = 'minnie65_public_v117'
+m65_internal = 'minnie65_phase3_v1'
+m35_public = 'minnie35_public_v0'
+m35_internal = 'minnie35_phase3_v0'
 
-def set_CAVEclient(datastack='m65_public', ver=None, token=None):
+def set_CAVEclient(datastack='m65_public', ver=None, caveclient_kws={}):
     """
     Sets CAVE client
 
     :param datastack: datastack to initialize client with
         Options:
-            - "m65_public" (default) -> microns_utils.ap_utils.default_public_datastack
-            - "m65_live" -> microns_utils.ap_utils.default_live_datastack
+            - "m65_public" (default) -> microns_utils.ap_utils.m65_public
+            - "m65_internal" -> microns_utils.ap_utils.m65_internal
+            - "m35_public" -> microns_utils.ap_utils.m35_public
+            - "m35_internal" -> microns_utils.ap_utils.m35_internal
             - None -> instantiates without datastack
     :param ver: materialization version to set
         default (None) -> latest version
 
-    :param token: token to pass to authclient
+    :param caveclient_kws: kwargs to pass to CAVEclient
 
-    :returns: caveclient
+    :returns: CAVEclient object
     """
-    if datastack == "m65_public":
-        datastack = default_public_datastack
-    if datastack == 'm65_live':
-        datastack = default_live_datastack
+    datastack_mapping = {
+        'm65_public': m65_public,
+        'm65_internal': m65_internal,
+        'm35_public': m35_public,
+        'm35_internal': m35_internal
+    }
+
+    if datastack in datastack_mapping:
+        datastack = datastack_mapping[datastack]
     
     try:
-        client = CAVEclient(datastack, auth_token=token)
+        client = CAVEclient(datastack, **caveclient_kws)
     except Exception as e:
         if "invalid_token" in e.args[0]:
             logging.error('Valid token not found. Returning unauthorized client.')
@@ -65,8 +74,11 @@ def set_CAVEclient(datastack='m65_public', ver=None, token=None):
     if ver is not None:
         client.materialize._version = int(ver)
 
-    logger.info(f'Instantiated CAVE client with datastack "{datastack}" and version: {client.materialize.version}. Most recent version: {client.materialize.most_recent_version()}')
-    
+    if hasattr(client, 'materialize'):
+        logger.info(f'Instantiated CAVE client with datastack "{datastack}" and version: {client.materialize.version}. Most recent version: {client.materialize.most_recent_version()}')
+    else:
+        logger.info(f'Instantiated CAVE client with datastack "{datastack}"')
+   
     return client
 
 
