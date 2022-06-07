@@ -72,11 +72,15 @@ def set_CAVEclient(datastack='m65_public', ver=None, caveclient_kws={}):
             return
             
     if ver is not None:
-        client.materialize._version = int(ver)
+        try:
+            client.materialize._version = int(ver)
+        except:
+            logging.exception('Could not set materialization version.')
+            raise Exception('Could not set materialization version.')
 
-    if hasattr(client, 'materialize'):
+    try:
         logger.info(f'Instantiated CAVE client with datastack "{client.info.datastack_name}" and version: {client.materialize.version}. Most recent version: {client.materialize.most_recent_version()}')
-    else:
+    except:
         logger.info(f'Instantiated CAVE client with datastack "{client.info.datastack_name}"')
    
     return client
