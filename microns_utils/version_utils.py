@@ -67,7 +67,7 @@ def check_latest_version_from_github(owner, repo, source, branch='main', path_to
         elif source == 'release':
             f = requests.get(f"https://api.github.com/repos/{owner}/{repo}/releases")
             if not f.ok:
-                logging.error('Could not check Github version because: "{f.reason}".')
+                logging.error(f'Could not check Github version because: "{f.reason}".')
                 return latest
             latest = parse_version(json.loads(f.text)[0]['tag_name'][1:])
         
