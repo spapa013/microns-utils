@@ -57,43 +57,43 @@ class InterpModel:
     
     
 class PolyModel:
-    def __init__(self, features, targets, model):
+    def __init__(self, model, features=None, targets=None, constants=None):
         """
         Solve for the constants of a polynomial model given a set of features and targets.
-
-        :param features: (N x F array) N is the number of samples and F is the number of features
-        :param targets: (N x T array) N is the number of samples and T is the number of targets
-        :param model: (str) the polynomial model to fit with F numbers of variables. A bias term is automatically included.
         
-        The model is fit using least squares with the formula:
+            OR
             
-            inv(X.T @ X) @ (X.T @ Y)
+        Initialize a solved model with constants.
+        
+        :param model: (str) the polynomial model to fit with F numbers of variables. A bias term is automatically included.
+            The model is fit using least squares with the formula: inv(X.T @ X) @ (X.T @ Y)
+            
+        :param features: (N x F array) N is the number of samples and F is the number of features. Required unless constants is provided. 
+        :param targets: (N x T array) N is the number of samples and T is the number of targets. Required unless constants is provided. 
+        :params constants: (F x T array) Constants of a solved model. Required unless features and targets are provided.
+        
 
-        Solve a linear model:
+        Examples: 
+        
+        - Solve a linear model:
         
             Start with a (3 x 2) feature array, i.e. 3 data points each with 2 features.
 
-                features = 
-                    [            
-                        [4, 2],
-                        [8, 2],
-                        [9, 1]
-                    ]
+                > features = np.array([[4, 2],
+                                     [8, 2],
+                                     [9, 1]])
 
             Set targets to a (3 x 1) array, i.e. 3 data points with 1 target:
 
-                targets = 
-                [
-                    [1],
-                    [4],
-                    [7]
-                ]
+                > targets = np.array([[1],
+                                      [4],
+                                      [7]])
 
             Pass model as a str with a unique variable for every feature dimension. The variables can be any [a-z] character.
             
-            features is (3 x 2), therefore 2 variables are needed. 
+            features is (3 x 2), therefore 2 unique variables are needed. 
 
-                model = "x + y"
+                > model = "x + y"
 
             Upon initialization, three constants will be computed:
                 The value of the bias term
@@ -102,83 +102,118 @@ class PolyModel:
             
             Solve model:
                 
-                m = PolyModel(features, targets, model)
+                > m = PolyModel(model, features, targets)
 
             To view the computed constants. The bias term is always the first constant.
 
-                m.constants
+                > m.constants
 
-                > array([[ 2.5 ],
-                >        [ 0.75],
-                >        [-2.25]])
+                    array([[ 2.5 ],
+                           [ 0.75],
+                           [-2.25]])
 
             To view the R^2 value:
 
-                m.r2
+                > m.r2
 
-                > array([1.])
+                    array([1.])
                 
-        A quadratic model could take the following form:
+        
+        - A quadratic model could take the following form:
 
-            model = "x + y + x*y + x^2 + y^2"
+            > model = "x + y + x*y + x^2 + y^2"
 
-        If features had 3 dimensions (N x 3), the model would need to have 3 unique variables. 
+        
+        - If features had 3 dimensions (N x 3), the model would need to have 3 unique variables. For example, this model defines x, y, and z:
 
-            For example, this model defines x, y, and z:
-
-                model = "x + y + z + x*y^2 + y^3*z^2"
+            > model = "x + y + z + x*y^2 + y^3*z^2"
                 
-        Multiple models can be solved simultaneously by passing in multiple targets, T. 
         
-        Appending an additional column to the target from above gives:
+        - Multiple models can be solved simultaneously by passing in multiple targets, T. 
         
-        targets = 
-                [
-                    [1, 8],
-                    [4, 6],
-                    [7, 5]
-                ]
+            > targets = np.array([[1, 8],
+                                  [4, 6],
+                                  [7, 5]])
         
-        The columns in m.constants and m.r2 maps to the columns in targets.
+            The columns in m.constants and m.r2 maps to the columns in targets.
         
-            m.constants
+                > m.constants
+
+                    array([[ 2.5 ,  9.  ],
+                          [ 0.75, -0.5 ],
+                          [-2.25,  0.5 ]])
+
+                > m.r2
+
+                    array([1., 1.])
+        
+        
+        - Initialize a model with solved constants:
             
-                > array([[ 2.5 ,  9.  ],
-                >       [ 0.75, -0.5 ],
-                >       [-2.25,  0.5 ]])
-            
-            m.r2
-                
-                > array([1., 1.])
+            > model = "x + y"
+            > constants = np.array([[ 2.5 ],
+                                    [ 0.75],
+                                    [-2.25]])
+                               
+            > m = PolyModel(model, constants=constants)
+    
+    
+            Run points through model:
+
+                > points_to_run = np.array([[4, 2],
+                                            [8, 2],
+                                            [9, 1]])
+                > m.run(points_to_run)
+
+                    array([[1.],
+                           [4.],
+                           [7.]])
         """
-        assert np.ndim(features) == 2, 'features must be 2 dimensional'
-        assert np.ndim(targets) == 2, 'targets must be 2 dimensional'
-        self.features = features
-        self.targets = targets
+        solve = True if features is not None and targets is not None else False
+        initialize = True if constants is not None else False
+            
+        assert solve ^ initialize, "Provide (features and targets) or constants, but not both."
+        
         self.model = model
         self._terms = ['_bias'] + [t.strip() for t in model.split('+')]
         self.variables = np.unique(re.findall('[a-z]', model)).tolist()
-        self._features_with_bias = np.hstack([np.expand_dims(np.ones(len(self.features)), 1), self.features])
         
-        assert len(self.features.T) == len(self.variables), \
-            f'The feature dimension must match the number of model variables. features.shape[1] = {self.features.shape[1]}, but the model has {len(self.variables)} variables.'
+        if solve:
+            assert np.ndim(features) == 2, 'features must be 2 dimensional'
+            assert np.ndim(targets) == 2, 'targets must be 2 dimensional'
+            self.features = features
+            self.targets = targets
+            self._features_with_bias = np.hstack([np.expand_dims(np.ones(len(self.features)), 1), self.features])
+
+            assert len(self.features.T) == len(self.variables), \
+                f'The feature dimension must match the number of model variables. features.shape[1] = {self.features.shape[1]}, but the model has {len(self.variables)} variables.'
+
+            for ll, ff in zip(['_bias'] + self.variables, self._features_with_bias.T):
+                setattr(self, ll, np.expand_dims(ff, 1))
+
+            mod_terms = self._terms.copy()
+            for ii, tt in enumerate(self._terms):
+                mod_terms[ii] = reduce(lambda mm, nn: mm.replace(nn, f'{nn}').replace('^', '**').strip(), ['_bias'] + self.variables, tt)
+
+            # solve
+            fc = []
+            for tt in mod_terms:
+                fc.append(eval(tt, self.__dict__.copy()))
+            self._features_computed = np.hstack(fc)
+
+            self.constants = self.least_squares(self._features_computed, self.targets)
         
-        for ll, ff in zip(['_bias'] + self.variables, self._features_with_bias.T):
-            setattr(self, ll, np.expand_dims(ff, 1))
-        
-        mod_terms = self._terms.copy()
-        for ii, tt in enumerate(self._terms):
-            mod_terms[ii] = reduce(lambda mm, nn: mm.replace(nn, f'{nn}').replace('^', '**').strip(), ['_bias'] + self.variables, tt)
-        
-        # solve
-        fc = []
-        for tt in mod_terms:
-            fc.append(eval(tt, self.__dict__.copy()))
-        self._features_computed = np.hstack(fc)
-        
-        self.constants = self.least_squares(self._features_computed, self.targets)
-        self.r2 = 1 - (np.sum((self.run(self.features) - self.targets)**2, 0) / np.sum((self.targets - self.targets.mean(0))**2, 0))
-        
+        if initialize:
+            self.constants = constants
+            
+    @property
+    def r2(self):
+        try:
+            return 1 - (np.sum((self.run(self.features) - self.targets)**2, 0) / np.sum((self.targets - self.targets.mean(0))**2, 0))
+        except Exception as e:
+            print('r2 failed to compute. r2 cant be solved without features and targets.')
+            raise e
+            
     @staticmethod
     def least_squares(p, q):
         return np.linalg.inv(p.T @ p) @ (p.T @ q)
@@ -191,6 +226,7 @@ class PolyModel:
         
         :returns: model output
         """
+        data = np.array(data)
         assert len(data.T) == len(self.variables), \
             f'The feature dimension must match the number of model variables. data.shape[1] = {data.shape[1]}, but the model has {len(self.variables)} variables.'
         
