@@ -169,16 +169,17 @@ class PolyModel:
                            [4.],
                            [7.]])
         """
-        solve = True if features is not None and targets is not None else False
+        solve = True if features is not None or targets is not None else False
         initialize = True if constants is not None else False
             
-        assert solve ^ initialize, "Provide (features and targets) or constants, but not both."
+        assert solve ^ initialize, "Provide features and targets, or constants, but not both."
         
         self.model = model
         self._terms = ['_bias'] + [t.strip() for t in model.split('+')]
         self.variables = np.unique(re.findall('[a-z]', model)).tolist()
         
         if solve:
+            assert features is not None and targets is not None, "Provide features and targets."
             assert np.ndim(features) == 2, 'features must be 2 dimensional'
             assert np.ndim(targets) == 2, 'targets must be 2 dimensional'
             self.features = features
