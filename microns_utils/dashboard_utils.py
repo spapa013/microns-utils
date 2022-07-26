@@ -2,9 +2,6 @@ from traitlets import Unicode, Dict, Unicode
 from ipywidgets import DOMWidget, register
 from IPython.core.magics.display import Javascript
 
-# CODE SNIPPET FOR FETCHING USERNAME
-# put in first cell of jupyter notebook
-# https://gist.github.com/danlester/ac1d5f29358ce1950482f8e7d4301f86
 def get_jupyerhub_user_info():
     Javascript("""
     require.undef('user_widget');
@@ -56,8 +53,11 @@ def get_jupyerhub_user_info():
 
 @register
 class DashboardUser(DOMWidget):
+    """
+    Get JupyterHub user info
+    https://gist.github.com/danlester/ac1d5f29358ce1950482f8e7d4301f86
+    """
     get_jupyerhub_user_info()
-    # https://gist.github.com/danlester/ac1d5f29358ce1950482f8e7d4301f86
     _view_name = Unicode('UserView').tag(sync=True)
     _view_module = Unicode('user_widget').tag(sync=True)
     _view_module_version = Unicode('0.1.0').tag(sync=True)
