@@ -149,11 +149,13 @@ class PolyModel:
         
         
         - Initialize a model with solved constants:
-            
-            > model = "x + y"
-            > constants = np.array([[ 2.5 ],
+            - constants must be 2-dimensional
+            - constants.shape[0] must be 1 greater than the number of model terms (the extra element is for the bias)
+
+            > model = "x + y"                   # n model terms = 2
+            > constants = np.array([[ 2.5 ], 
                                     [ 0.75],
-                                    [-2.25]])
+                                    [-2.25]])   # constants.shape[0] = 3
                                
             > m = PolyModel(model, constants=constants)
     
@@ -171,7 +173,6 @@ class PolyModel:
         """
         solve = True if features is not None or targets is not None else False
         initialize = True if constants is not None else False
-            
         assert solve ^ initialize, "Provide features and targets, or constants, but not both."
         
         self.model = model
@@ -205,8 +206,11 @@ class PolyModel:
             self.constants = self.least_squares(self._features_computed, self.targets)
         
         if initialize:
+            constants = np.array(constants)
+            assert np.ndim(constants) == 2, 'Constants must be 2-dimensional'
+            assert constants.shape[0] == len(self._terms), f'The feature dimension of constants must be 1 element greater than the number of model terms. constants.shape[0] = {constants.shape[0]} but number of model terms = {len(self.variables)}.'
             self.constants = constants
-            
+
     @property
     def r2(self):
         try:
@@ -234,9 +238,11 @@ class PolyModel:
         mapping = {}
         for var, col in zip(self.variables, data.T):
             mapping[var] = col
+
         features = [np.expand_dims(np.ones(len(data)), 1)]
         for t in self._terms[1:]:
             features.append(np.expand_dims(eval(t.replace('^', '**'), mapping), 1))
+        
         out = []
         for const in self.constants.T:
             out.append(np.sum(const * np.hstack(features), 1))
