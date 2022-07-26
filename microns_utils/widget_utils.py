@@ -1,37 +1,21 @@
+from enum import Enum
+import functools
+import inspect
+from itertools import chain
+import logging
 import datajoint_plus as djp
-from collections import namedtuple
+from collections import Counter, namedtuple
 import numpy as np
 import matplotlib.pyplot as plt
-
+from .misc_utils import wrap
 import wridgets as wr
-from wridgets import Output, HBox, VBox, Label, Layout, HTML, display, clear_output
 import slack
 import slack.errors
 import traceback
 import os
+from hashlib import md5
 
 logger = djp.getLogger(__name__)
-
-def DBox(items, dims='auto'):
-    n_items = len(items)
-    
-    if dims=='auto':
-        n_cols = 4
-        n_rows = np.ceil(n_items / n_cols).astype(np.int)
-
-    else:
-        n_rows, n_cols = dims
-        if n_rows * n_cols < n_items:
-            logger.warning(f"Specified dimensions: {n_rows, n_cols} won't fit all {n_items} items")
-
-    HBoxs = []
-    for r in range(n_rows):
-        HBoxs.append(
-            HBox(
-                *[items[slice(n_cols*r, n_cols*(r+1))]]
-            )
-        )
-    return VBox([*HBoxs])
 
 
 def namedtuple_with_defaults(nt, defaults=None, skip_extra_fields=False):
@@ -178,12 +162,12 @@ class StackByDepthLoader:
 
 
 class Fig:
-    def __init__(self, plot_functions, output=None, ax_layout='auto', fig_kws={}, plot_kws={}, initialize=True, scroll_up_action=None, scroll_down_action=None, button_press_action=None, draw_action=None, pick_action=None, resize_action=None, **kwargs):
+    def __init__(self, plot_functions, output=None, ax_layout='auto', fig_kws=None, plot_kws=None, initialize=True, scroll_up_action=None, scroll_down_action=None, button_press_action=None, draw_action=None, pick_action=None, resize_action=None, **kwargs):
         self.plot_functions = plot_functions
         self.output = output
         self.ax_layout = ax_layout
-        self.fig_kws = fig_kws
-        self.plot_kws = plot_kws
+        self.fig_kws = {} if fig_kws is None else fig_kws
+        self.plot_kws = {} if plot_kws is None else plot_kws
         self.is_initialized = False
         self.scroll_up_action = scroll_up_action
         self.scroll_down_action = scroll_down_action
@@ -219,11 +203,11 @@ class Fig:
         self.is_initialized=True
         self.update_plot()
     
-    def update_plot(self, plot_kws={}):
+    def update_plot(self, plot_kws=None):
         if not self.is_initialized:
             print("Plot is not initialized. Run 'initialize()' method first.")
 
-        if not plot_kws:
+        if plot_kws is None:
             plot_kws = self.plot_kws
             
         for ax, f in self.axes_function_mapping.items():
@@ -294,7 +278,7 @@ class Fig:
 
 
 class DatajointTableWidget():
-    def __init__(self, dj_table, archive_table=None, show=False, table_on=True, enable_mod=False, field_dims='auto', **kwargs):
+    def __init__(self, dj_table, archive_table=None, display=False, table_on=True, enable_mod=False, field_dims='auto', **kwargs):
         self.dj_table = dj_table
         self.archive_table = archive_table
         self.restricted_table = self.dj_table()
@@ -307,7 +291,7 @@ class DatajointTableWidget():
         
         # VIEW BUTTONS
         self.dj_table_out = wr.Output()
-        self.show_table_button = wr.Button(description="Show Table", on_interact=self.show_table, output=self.dj_table_out)
+        self.display_table_button = wr.Button(description="Display Table", on_interact=self.display_table, output=self.dj_table_out)
         self.hide_table_button = wr.Button(description="Hide Table", on_interact=self.hide_table)
         self.restrict_button = wr.Button(description="Apply Restrictions", on_interact=self.apply_restrs)
         self.reset_restrs_button = wr.Button(description="Reset Restrictions", on_interact=self.reset_restrs)
@@ -333,17 +317,17 @@ class DatajointTableWidget():
             self.fields[name] = wr.Text(value=value, description=name, placeholder=placeholder, \
                                 continuous_update=True, style=style, layout={})
         
-        if show:
-            self.show()
+        if display:
+            self.display()
             
-    def show(self):
+    def display(self):
         fields = []
         for v in self.fields.values():
             fields.append(v.widget)
         
         view_module = wr.HBox([
                 wr.Label(value=rf'$\large \text{{Restrict:}} $'),
-                self.show_table_button.widget,
+                self.display_table_button.widget,
                 self.hide_table_button.widget,
                 self.restrict_button.widget, 
                 self.reset_restrs_button.widget,
@@ -366,28 +350,28 @@ class DatajointTableWidget():
             self.enable_mod_check.widget
         ])
         
-        display(
+        wr.display(
             view_module,
             modify_module,
             options_module,
             self.modification_out,
-            DBox(fields, self.field_dims), 
+            wr.GridBox2(fields, self.field_dims), 
             wr.Label(value=rf'$\large \text{{Restrictions Applied:}} $'), 
             self.restrs_out,
             self.dj_table_out
             
         )
         
-        self.show_restrs()
+        self.display_restrs()
         
         if self.table_on:
-            self.show_table_button.widget.click()
+            self.display_table_button.widget.click()
         
         if self.enable_mod:
             self.enable_mod_check.widget.value = True
         
-    def show_table(self):
-        display(self.restricted_table)
+    def display_table(self):
+        wr.display(self.restricted_table)
         self.table_on=True
         
     def hide_table(self):
@@ -408,9 +392,9 @@ class DatajointTableWidget():
         self.restricted_table = source
         
         if self.table_on:
-            self.show_table_button.widget.click()
+            self.display_table_button.widget.click()
         
-        self.show_restrs()
+        self.display_restrs()
     
     def reset_restrs(self):
         self.restricted_table = self.dj_table()
@@ -418,14 +402,14 @@ class DatajointTableWidget():
         self.restrs_out.clear_output()
         
         if self.table_on:
-            self.show_table_button.widget.click()
+            self.display_table_button.widget.click()
             
-        self.show_restrs()
+        self.display_restrs()
     
-    def show_restrs(self):
+    def display_restrs(self):
         self.restrs_out.clear_output()
         with self.restrs_out:
-            display(self.restrs)
+            wr.display(self.restrs)
         
     def clear_fields(self):
         for v in self.fields.values():
@@ -457,7 +441,7 @@ class DatajointTableWidget():
         print(f'Inserted: {insert_dict}')
         
         if self.table_on:
-            self.show_table_button.widget.click()
+            self.display_table_button.widget.click()
     
     def delete(self):
         if len(self.restricted_table)!=1:
@@ -469,7 +453,7 @@ class DatajointTableWidget():
             print(f'Entry deleted successfully: {deleted_dict}')
             
         if self.table_on:
-            self.show_table_button.widget.click()
+            self.display_table_button.widget.click()
     
     def update(self):
         if len(self.restricted_table)!=1:
@@ -488,7 +472,7 @@ class DatajointTableWidget():
                 print(f'Successfully update from {old_dict} to {update_dict}.')
         
         if self.table_on:
-            self.show_table_button.widget.click()
+            self.display_table_button.widget.click()
 
     def archive(self):
         if self.archive_table is None:
@@ -503,11 +487,11 @@ class DatajointTableWidget():
             print('Archive successful.')
         
         if self.table_on:
-            self.show_table_button.widget.click()
+            self.display_table_button.widget.click()
 
 
 class DataJointConnect:
-    def __init__(self, show=True, disable_after_submitting=False, action_on_submit=None, kwargs_for_action_on_submit={}, **kwargs):
+    def __init__(self, disable_after_submitting=False, action_on_submit=None, kwargs_for_action_on_submit=None, display=True,**kwargs):
         self.defaults = kwargs
         self.field_width=175
         self.field_layout = {'width': f'{self.field_width}px'}
@@ -516,27 +500,23 @@ class DataJointConnect:
         self.dj_username_field = wr.Text(layout=self.field_layout)
         self.dj_password_field = wr.Password(layout=self.field_layout)
         self.output = wr.Output()
-        self.submit_button = wr.Button(description="Submit", on_interact=self.submit_credentials, output=self.output, layout={'width':f'{self.field_width*2.03}px'}, button_style='info')
+        self.submit_button = wr.Button(description="Submit", on_interact=self._submit_credentials, output=self.output, layout={'width':f'{self.field_width*2.03}px'}, button_style='info')
         self._is_connected = False
         self.disable_after_submitting = disable_after_submitting
         self.action_on_submit = action_on_submit
-        self.kwargs_for_action_on_submit = kwargs_for_action_on_submit
+        self.kwargs_for_action_on_submit = {} if kwargs_for_action_on_submit is None else kwargs_for_action_on_submit
         self.clear_output_button = wr.Button(on_interact=self.output.clear_output, description='Clear', button_style='info', layout={'width': '70px'})
 
         # INITIALIZE MODULE
-        self.generate_module()
+        self._generate_module()
 
-        # DISPLAY
-        # if show:
-        #     self.show()
-
-        if not show:
+        if not display:
             self.module.layout.display = 'none'
-            display(self.module)
+            wr.display(self.module)
         else:
-            display(self.module)
+            wr.display(self.module)
 
-    def generate_module(self):
+    def _generate_module(self):
         self.module = wr.VBox([
                 wr.HBox([self.dj_username_label.widget, self.dj_username_field.widget]),
                 wr.HBox([self.dj_password_label.widget, self.dj_password_field.widget]),
@@ -544,8 +524,8 @@ class DataJointConnect:
                 self.output
         ])
             
-    def show(self):
-        display(self.module)
+    def display(self):
+        wr.display(self.module)
 
 
     # def custom_msg(self, msg:str):
@@ -553,14 +533,14 @@ class DataJointConnect:
     #         wr.clear_output()
     #         display(wr.HBox([wr.Label(msg), self.clear_output_button.widget]))
 
-    def default_values(self, name, value):
-        return value if name not in self.defaults else self.defaults[name]
+    # def _default_values(self, name, value):
+    #     return value if name not in self.defaults else self.defaults[name]
     
     @property
     def is_connected(self):
         return self._is_connected
     
-    def check_connection(self):
+    def _check_connection(self):
         try:
             djp.conn.connection
             self._is_connected = True
@@ -569,15 +549,15 @@ class DataJointConnect:
             print('Connection not established.')
             self._is_connected = False
 
-    def submit_credentials(self, disable_after_submitting=None, action_on_submit=None, kwargs_for_action_on_submit={}):
+    def _submit_credentials(self, disable_after_submitting=None, action_on_submit=None, kwargs_for_action_on_submit=None):
         import logging
         logging.disable(50)
         djp.config['database.user'] = self.dj_username_field.widget.value
         djp.config['database.password'] = self.dj_password_field.widget.value
         logging.disable(logging.NOTSET)
         djp.conn(reset=True)
-        self.check_connection()
-        
+        self._check_connection()
+        kwargs_for_action_on_submit = {} if kwargs_for_action_on_submit is None else kwargs_for_action_on_submit
         if disable_after_submitting is None:
             disable_after_submitting = self.disable_after_submitting
             if disable_after_submitting:
