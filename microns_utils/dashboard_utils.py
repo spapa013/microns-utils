@@ -5,10 +5,8 @@ from IPython.core.magics.display import Javascript
 # CODE SNIPPET FOR FETCHING USERNAME
 # put in first cell of jupyter notebook
 # https://gist.github.com/danlester/ac1d5f29358ce1950482f8e7d4301f86
-def get_user():
+def get_jupyerhub_user_info():
     Javascript("""
-    %%javascript
-
     require.undef('user_widget');
 
     define('user_widget', ["@jupyter-widgets/base"], function (widgets) {
@@ -58,7 +56,7 @@ def get_user():
 
 @register
 class DashboardUser(DOMWidget):
-    get_user()
+    get_jupyerhub_user_info()
     # https://gist.github.com/danlester/ac1d5f29358ce1950482f8e7d4301f86
     _view_name = Unicode('UserView').tag(sync=True)
     _view_module = Unicode('user_widget').tag(sync=True)
