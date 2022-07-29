@@ -38,7 +38,7 @@ get_user_info = """
                 var json = this.model.get('value');
                 var text = 'No user';
                 if (json.hasOwnProperty('name')) {
-                    text = 'Rendered by Javascript: '+json['name'];
+                    text = '';
                 }
                 this.el.appendChild(document.createTextNode(text));
 
