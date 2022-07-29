@@ -8,3 +8,4 @@ caveclient
 nglui
 slackclient
 datajoint-plus
+wridgets
