@@ -1,9 +1,10 @@
 from traitlets import Unicode, Dict, Unicode
-from ipywidgets import DOMWidget, register, link
+from ipywidgets import DOMWidget, register
 import wridgets.app as wra
+from ipywidgets import link
 import json
 
-jupyerhub_get_user_info = """
+get_user_info = """
     require.undef('user_widget');
 
     define('user_widget', ["@jupyter-widgets/base"], function (widgets) {
@@ -37,7 +38,7 @@ jupyerhub_get_user_info = """
                 var json = this.model.get('value');
                 var text = 'No user';
                 if (json.hasOwnProperty('name')) {
-                    text = '';
+                    text = 'Rendered by Javascript: '+json['name'];
                 }
                 this.el.appendChild(document.createTextNode(text));
 
@@ -63,7 +64,7 @@ class DashboardUser(DOMWidget):
 
     value = Dict({}, help="User info").tag(sync=True)
     name = Unicode('').tag(sync=True)
-
+    
 
 class UserApp(wra.App):
     store_config = [
@@ -95,3 +96,4 @@ class UserApp(wra.App):
     
     def on_user_info_field_update(self):
         self.user_info = json.loads(self.children.UserInfoField.get1('value'))
+        
