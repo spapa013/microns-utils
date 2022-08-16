@@ -14,6 +14,11 @@ import slack.errors
 import traceback
 import os
 from hashlib import md5
+import wridgets.app as wra
+from traitlets import Unicode, Dict, Unicode
+from ipywidgets import DOMWidget, register
+from ipywidgets import link
+import json
 
 logger = djp.getLogger(__name__)
 
@@ -633,3 +638,5 @@ class SlackForWidget(slack.WebClient):
         response1 = self.post_to_slack(text, channel=channel, as_file=as_file)
         response2 = self.send_direct_message(text, slack_username, as_file=as_file)
         return [response1, response2]
+
+
