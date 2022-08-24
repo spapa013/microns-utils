@@ -8,12 +8,26 @@ import numpy as np
 import nglui
 import pandas as pd
 from .ap_utils import set_CAVEclient
-from .misc_utils import wrap
+from .misc_utils import wrap, classproperty
 
-client = set_CAVEclient()
-default_ng_res = (4,4,40)
-default_img_src = client.info.image_source()
-default_seg_src = client.info.segmentation_source()
+class Client:
+    _client = None
+    default_ng_res = (4,4,40)
+    
+    @classproperty
+    def client(cls):
+        if cls._client is None:
+            cls._client = set_CAVEclient()
+        return cls._client
+    
+    @classproperty
+    def default_img_src(cls):
+        return cls.client.info.image_source()
+
+    @classproperty
+    def default_seg_src(cls):
+        return cls.client.info.segmentation_source()
+
 
 def view_arrays_in_neuroglancer(arrays:list, names:list=None, colors:list=None, image_src:str=None, res:tuple=None, view_kws:dict=None):
     """
@@ -31,9 +45,9 @@ def view_arrays_in_neuroglancer(arrays:list, names:list=None, colors:list=None, 
 
     :returns: HTML Neuroglancer link
     """
-    res = default_ng_res if res is None else res
+    res = Client.default_ng_res if res is None else res
     viewer = nglui.EasyViewer()
-    viewer.add_image_layer('em', default_img_src if image_src is None else image_src)
+    viewer.add_image_layer('em', Client.default_img_src if image_src is None else image_src)
     viewer.set_resolution(res)
     default_view_kws = dict(show_slices=False, layout='3d', orthographic=True, zoom_3d=18221, position=(240640, 207872,  21360))
     sbs = []
@@ -73,11 +87,11 @@ def view_segments_in_neuroglancer(segments:list, image_src:str=None, seg_src:str
     :returns: HTML Neuroglancer link
     """
     # build viewer
-    res = default_ng_res if res is None else res
+    res = Client.default_ng_res if res is None else res
     viewer = nglui.EasyViewer()
     viewer.set_resolution(res)
-    viewer.add_image_layer('em', default_img_src if image_src is None else image_src)
-    viewer.add_segmentation_layer('seg', default_seg_src if seg_src is None else seg_src)
+    viewer.add_image_layer('em', Client.default_img_src if image_src is None else image_src)
+    viewer.add_segmentation_layer('seg', Client.default_seg_src if seg_src is None else seg_src)
     
     # add segments
     segs = wrap(segments)
