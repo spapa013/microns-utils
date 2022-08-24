@@ -14,7 +14,7 @@ from caveclient import CAVEclient
 
 logger = logging.getLogger(__name__)
 
-m65_public = 'minnie65_public_v117'
+m65_public = 'minnie65_public_v343'
 m65_internal = 'minnie65_phase3_v1'
 m35_public = 'minnie35_public_v0'
 m35_internal = 'minnie35_phase3_v0'
