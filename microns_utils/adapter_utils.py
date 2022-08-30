@@ -2,6 +2,7 @@
 Utils for DataJoint adapters
 """
 
+import json
 import datajoint as dj
 import numpy as np
 import h5py
@@ -48,6 +49,14 @@ class NumpyAdapter(FilePathAdapter):
     def get(self, filepath):
         filepath = super().get(filepath)
         return np.load(filepath, mmap_mode='r')
+
+
+class JsonAdapter(FilePathAdapter):
+    def get(self, filepath):
+        filepath = super().get(filepath)
+        with open(filepath, "r") as f:
+            return json.load(f)
+
 
 def adapt_mesh_hdf5(filepath, parse_filepath_stem=True, filepath_has_timestamp=False, separator='__', timestamp_fmt="%Y-%m-%d_%H:%M:%S", return_type='namedtuple', as_lengths=False):
     """
