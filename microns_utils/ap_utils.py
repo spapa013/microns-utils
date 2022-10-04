@@ -10,7 +10,7 @@ import logging
 from datajoint_plus.utils import wrap
 from cloudvolume import CloudVolume
 from caveclient import CAVEclient
-
+from .misc_utils import classproperty
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ m65_internal = 'minnie65_phase3_v1'
 m35_public = 'minnie35_public_v0'
 m35_internal = 'minnie35_phase3_v0'
 
-def set_CAVEclient(datastack='m65_public', ver=None, caveclient_kws={}):
+def set_CAVEclient(datastack='m65_public', ver=None, caveclient_kws=None):
     """
     Sets CAVE client
 
@@ -48,7 +48,7 @@ def set_CAVEclient(datastack='m65_public', ver=None, caveclient_kws={}):
         datastack = datastack_mapping[datastack]
     
     try:
-        client = CAVEclient(datastack, **caveclient_kws)
+        client = CAVEclient(datastack, **{} if caveclient_kws is None else caveclient_kws)
     except Exception as e:
         if "invalid_token" in e.args[0]:
             logging.error('Valid token not found. Returning unauthorized client.')
@@ -84,6 +84,28 @@ def set_CAVEclient(datastack='m65_public', ver=None, caveclient_kws={}):
         logger.info(f'Instantiated CAVE client with datastack "{client.info.datastack_name}"')
    
     return client
+
+
+class CAVEClient:
+    _client = None
+
+    @classproperty
+    def client_ver(cls):
+        return cls.client.materialize.version
+
+    @classmethod
+    def set_client(cls, datastack='m65_internal', ver=None, caveclient_kws=None):
+        cls._client = set_CAVEclient(
+            datastack=datastack,
+            ver=ver,
+            caveclient_kws=caveclient_kws
+        )
+
+    @classproperty
+    def client(cls):
+        if cls._client is None:
+            cls.set_client()
+        return cls._client
 
 
 def get_stats_from_cv_path(cv_path, mip=None):
