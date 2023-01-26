@@ -159,3 +159,37 @@ def get_stack_from_cv_path(cv_path, mip, seg_ids=None):
     return cv.download(bbox=cv.bounds, segids=None if seg_ids is None else wrap(seg_ids)).squeeze()
 
 
+def query_nucleus_id_in_CAVE(nucleus_id, table_name=None, set_CAVEclient_kws=None, client=None):
+    """
+    Queries nucleus_detection_v0 or user provided table in CAVE with the given nucleus_id
+
+    :param nucleus_id (int): nucleus_id to query
+    :param table_name (str): table in CAVE to query
+        default is nucleus_detection_v0
+    :param set_CAVEclient (dict): - keywords to pass to set_CAVEclient
+        ignored if client is provided
+    :param client (CAVEclient): client to use for the query
+    """
+    if (set_CAVEclient_kws is not None) and (client is not None):
+        logger.warning('when both set_CAVEclient_kws and client are passed set_CAVEclient_kws will be ignored')
+    client = client if client is not None else set_CAVEclient(**set_CAVEclient_kws if set_CAVEclient_kws is not None else {})
+    df = client.materialize.query_table('nucleus_detection_v0' if table_name is None else table_name, filter_equal_dict={'id': nucleus_id}).rename(columns={'id': 'nucleus_id', 'pt_root_id': 'segment_id'})
+    return df
+
+
+def query_segment_id_in_CAVE(segment_id, table_name=None, set_CAVEclient_kws=None, client=None):
+    """
+    Queries nucleus_detection_v0 or user provided table in CAVE with the given segment_id
+
+    :param segment_id (int): segment_id to query
+    :param table_name (str): table in CAVE to query
+        default is nucleus_detection_v0
+    :param set_CAVEclient (dict): - keywords to pass to set_CAVEclient
+        ignored if client is provided
+    :param client (CAVEclient): client to use for the query
+    """
+    if (set_CAVEclient_kws is not None) and (client is not None):
+        logger.warning('when both set_CAVEclient_kws and client are passed set_CAVEclient_kws will be ignored')
+    client = client if client is not None else set_CAVEclient(**set_CAVEclient_kws if set_CAVEclient_kws is not None else {})
+    df = client.materialize.query_table('nucleus_detection_v0' if table_name is None else table_name, filter_equal_dict={'pt_root_id': segment_id}).rename(columns={'id': 'nucleus_id', 'pt_root_id': 'segment_id'})
+    return df
