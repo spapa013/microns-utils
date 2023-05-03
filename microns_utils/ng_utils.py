@@ -12,8 +12,56 @@ from nglui import EasyViewer
 import pandas as pd
 from .ap_utils import set_CAVEclient
 from .misc_utils import wrap, classproperty
+from nglui import statebuilder
 
 default_ng_res = (4,4,40)
+
+
+class NgLinks:
+    _client = None
+
+    @classproperty
+    def client(cls):
+        if cls._client is None:
+            cls._client = set_CAVEclient('minnie65_phase3_v1')
+        return cls._client
+    
+    @classproperty
+    def em_src(cls):
+        return cls.client.info.image_source()
+
+    @classproperty
+    def seg_src(cls):
+        return cls.client.info.segmentation_source()
+    
+    @classproperty
+    def nuc_src(cls):
+        return cls.client.materialize.get_table_metadata('nucleus_detection_v0')['flat_segmentation_source']
+    
+    @classproperty
+    def em_2p_src(cls):
+        return 'precomputed://gs://neuroglancer/alex/calcium/minnie/EM_phase3_2p_coords'
+    
+    @classproperty
+    def vess_2p_src(cls):
+        return 'precomputed://gs://neuroglancer/alex/calcium/minnie/2pstack_vessels_highres'
+
+    @classproperty
+    def nuc_seg_src(cls):
+        return 'precomputed://gs://neuroglancer/alex/calcium/minnie/nuc_seg_phase3_2p_coords'
+    # image layers
+    @classproperty
+    def em_layer(cls):
+        return statebuilder.ImageLayerConfig(cls.em_src, contrast_controls=True, black=0.35, white=0.7)
+    
+    @classproperty
+    def seg_layer(cls):
+        return statebuilder.SegmentationLayerConfig(cls.seg_src,  name='seg')
+    
+    @classproperty
+    def nuc_layer(cls):
+        return statebuilder.SegmentationLayerConfig(cls.nuc_src, name='nuclear-seg')
+
 
 def view_arrays_in_neuroglancer(arrays:list, names:list=None, colors:list=None, res:tuple=None, view_kws:dict=None, set_CAVEclient_kws=None, client=None):
     """

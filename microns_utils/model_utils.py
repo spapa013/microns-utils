@@ -7,7 +7,7 @@ import re
 from scipy.interpolate import griddata, RBFInterpolator
 
 class InterpModel:
-    def __init__(self, points, values, method, method_kws={}):
+    def __init__(self, points, values, method, method_kws=None):
         """
         Initialize with parameters for supported interpolation methods.
 
@@ -27,7 +27,7 @@ class InterpModel:
         self._points = points
         self._values = values
         self._method = method
-        self.method_kws = method_kws
+        self.method_kws = method_kws if method_kws is not None else {}
     
     @property
     def points(self):
