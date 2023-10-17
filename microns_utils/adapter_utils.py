@@ -11,8 +11,11 @@ from collections import namedtuple
 import pickle
 from datetime import datetime
 import logging
+import pandas as pd
 
 from .filepath_utils import validate_filepath
+
+logger = logging.getLogger(__name__)
 
 
 class Adapter(dj.AttributeAdapter):
@@ -39,6 +42,13 @@ class PickleAdapter(Adapter):
         return pickle.loads(pickled)
 
 
+class PickleFilepathAdapter(FilePathAdapter):
+    def get(self, filepath):
+        filepath = super().get(filepath)
+        with open(filepath, "rb") as f:
+            return pickle.load(f)
+
+
 class MeshAdapter(FilePathAdapter):
     def get(self, filepath):
         filepath = super().get(filepath)
@@ -50,6 +60,12 @@ class NumpyAdapter(FilePathAdapter):
         filepath = super().get(filepath)
         return np.load(filepath, mmap_mode='r')
 
+
+class PandasPickleAdapter(FilePathAdapter):
+    def get(self, filepath):
+        filepath = super().get(filepath)
+        return pd.read_pickle(filepath)
+    
 
 class JsonAdapter(FilePathAdapter):
     def get(self, filepath):
@@ -110,7 +126,7 @@ def adapt_mesh_hdf5(filepath, parse_filepath_stem=True, filepath_has_timestamp=F
                 info_dict.update({**{'segment_id': int(segment_id), 'timestamp': timestamp}})
         except:
             info_dict.update({**defaults})
-            logging.warning('Could not parse mesh filepath.')
+            logger.warning('Could not parse mesh filepath.')
     else:
         info_dict.update({**defaults})
 
