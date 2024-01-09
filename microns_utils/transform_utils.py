@@ -4,6 +4,7 @@ Utilities for transformations, adjustments, and registrations of MICrONS volumes
 
 import numpy as np
 from scipy.stats import gaussian_kde
+from scipy import ndimage
 from .misc_utils import wrap
 
 
@@ -32,6 +33,37 @@ def normalize_image(image, newrange=[0, 255], clip_bounds=None, astype=np.uint8)
     if clip_bounds is not None:
         image = np.clip(image,clip_bounds[0], clip_bounds[1]) 
     return (((image - image.min())*(newrange[1]-newrange[0])/(image.max() - image.min())) + newrange[0]).astype(astype)
+
+
+def lcn(image, sigmas=(12, 12)):
+    """ Local contrast normalization.
+    Normalize each pixel using mean and stddev computed on a local neighborhood.
+    We use gaussian filters rather than uniform filters to compute the local mean and std
+    to soften the effect of edges. Essentially we are using a fuzzy local neighborhood.
+    Equivalent using a hard defintion of neighborhood will be:
+        local_mean = ndimage.uniform_filter(image, size=(32, 32))
+    :param np.array image: Array with raw two-photon images.
+    :param tuple sigmas: List with sigmas (one per axis) to use for the gaussian filter.
+        Smaller values result in more local neighborhoods. 15-30 microns should work fine
+    """
+    local_mean = ndimage.gaussian_filter(image, sigmas)
+    local_var = ndimage.gaussian_filter(image ** 2, sigmas) - local_mean ** 2
+    local_std = np.sqrt(np.clip(local_var, a_min=0, a_max=None))
+    norm = (image - local_mean) / (local_std + 1e-7)
+    return norm
+
+
+def sharpen_2pimage(image, laplace_sigma=0.7, low_percentile=3, high_percentile=99.9):
+    """ Apply a laplacian filter, clip pixel range and normalize.
+    :param np.array image: Array with raw two-photon images.
+    :param float laplace_sigma: Sigma of the gaussian used in the laplace filter.
+    :param float low_percentile, high_percentile: Percentiles at which to clip.
+    :returns: Array of same shape as input. Sharpened image.
+    """
+    sharpened = image - ndimage.gaussian_laplace(image, laplace_sigma)
+    clipped = np.clip(sharpened, *np.percentile(sharpened, [low_percentile, high_percentile]))
+    norm = (clipped - clipped.mean()) / (clipped.max() - clipped.min() + 1e-7)
+    return norm
 
 
 def run_kde(data, nbins, bounds='auto', method='gaussian_kde', method_kws=None):

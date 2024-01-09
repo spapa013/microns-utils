@@ -4,6 +4,7 @@ Methods for checking installed and latest versions of microns packages.
 
 import traceback
 import requests
+from .misc_utils import wrap
 try:
     from importlib import metadata
 except ImportError:
@@ -15,6 +16,7 @@ import json
 from pathlib import Path
 from .filepath_utils import find_all_matching_files
 
+logger = logging.getLogger(__name__)
 
 def parse_version(text: str):
     """
@@ -60,14 +62,14 @@ def check_latest_version_from_github(owner, repo, source, branch='main', path_to
         elif source == 'tag':
             f = requests.get(f"https://api.github.com/repos/{owner}/{repo}/tags")
             if not f.ok:
-                logging.error(f'Could not check Github version because: "{f.reason}".')
+                logger.error(f'Could not check Github version because: "{f.reason}".')
                 return latest
             latest = parse_version(json.loads(f.text)[0]['name'][1:])
             
         elif source == 'release':
             f = requests.get(f"https://api.github.com/repos/{owner}/{repo}/releases")
             if not f.ok:
-                logging.error(f'Could not check Github version because: "{f.reason}".')
+                logger.error(f'Could not check Github version because: "{f.reason}".')
                 return latest
             latest = parse_version(json.loads(f.text)[0]['tag_name'][1:])
         
@@ -75,7 +77,7 @@ def check_latest_version_from_github(owner, repo, source, branch='main', path_to
             raise ValueError(f'source: "{source}" not recognized. Options include: "commit", "tag", "release". ')
     except:
         if warn:
-            logging.warning('Failed to check latest version from Github.')
+            logger.warning('Failed to check latest version from Github.')
             traceback.print_exc()
 
     return latest
@@ -115,7 +117,7 @@ def check_package_version_from_distributions(package, warn=True):
     version = [dist.version for dist in metadata.distributions() if dist.metadata["Name"] == package]
     if not version:
         if warn:
-            logging.warning('Package not found in distributions.')
+            logger.warning('Package not found in distributions.')
         return ''
     return version[0]
 
@@ -136,13 +138,13 @@ def check_package_version_from_sys_path(package, path_to_version_file, prefix=''
     
     if len(paths)>1:
         if warn:
-            logging.warning(err_base_str + f'{len(paths)} paths containing {package} were found in sys.path. Consider adding a prefix for further specification.')
+            logger.warning(err_base_str + f'{len(paths)} paths containing {package} were found in sys.path. Consider adding a prefix for further specification.')
             [print(p) for p in paths]
         return ''
     
     elif len(paths) == 0:
         if warn:
-            logging.warning(err_base_str + f'no paths matching {package} were found in sys.path.')
+            logger.warning(err_base_str + f'no paths matching {package} were found in sys.path.')
         return ''
     
     else:
@@ -150,7 +152,7 @@ def check_package_version_from_sys_path(package, path_to_version_file, prefix=''
 
     if len(files) == 0:
         if warn:
-            logging.warning(err_base_str + 'no version.py file was found.')
+            logger.warning(err_base_str + 'no version.py file was found.')
         return ''
 
     else:
@@ -190,6 +192,8 @@ def check_package_version(package, prefix='', check_if_latest=False, check_if_la
 
         if __version__ != latest:
             if warn:
-                logging.warning(f'You are using {package} version {__version__}, which does not match the latest version on Github, {latest}.')
+                logger.warning(f'You are using {package} version {__version__}, which does not match the latest version on Github, {latest}.')
     
     return __version__
+
+
