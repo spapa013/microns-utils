@@ -12,7 +12,7 @@ import datajoint_plus as djp
 from datajoint_plus.utils import format_rows_to_df
 from datajoint_plus import base as djpb
 from datajoint_plus import user_tables as djpu
-from .misc_utils import classproperty, wrap
+from .misc_utils import classproperty, wrap, unwrap
 from .version_utils import check_package_version
 from .datetime_utils import current_timestamp
 
@@ -313,3 +313,25 @@ class Maker(Base, djpb.BasePart, djpu.UserTable, dj.Part, dj.Computed):
 
     def on_make(self, key):
         pass
+
+
+def run_method_from_parts(dj_table, key):
+    """
+    Calls dj_table.r1p(key) and then run(**key).
+    """
+    return dj_table.r1p(key).run(**key)
+
+
+def get_from_parts(dj_table, key=None):
+    """
+    Restricts and calls part.get() for each part table.
+
+    :param dj_table (dj.Table): datajoint table
+    :param key (dict): key to restrict by. If None, returns all rows.
+
+    Returns the result(s) as a list.
+    """
+    result = []
+    for p in dj_table.parts(as_cls=True):
+        result.extend(p().get(key=key))
+    return result
